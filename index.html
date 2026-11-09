@@ -6,8 +6,6 @@
   <title>Show do Milhão TGDQ - Kahoot Multiplayer</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- PeerJS Conexão Realtime Gratuita -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   
   <style>
     :root {
@@ -193,7 +191,7 @@
 
   <div class="container">
     
-    <!-- TELA 1: SELEÇÃO DE MODO -->
+    <!-- TELA 1: INICIAL -->
     <div id="screen-welcome" class="screen active">
       <h1>Quiz do Milhão TGDQ</h1>
       <p class="subtitle">Multiplayer em Tempo Real (Estilo Kahoot)</p>
@@ -204,45 +202,45 @@
       <p style="margin-top: 25px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA 2: ENTRAR COM PIN (CELULAR) -->
+    <!-- TELA 2: ENTRAR COM PIN -->
     <div id="screen-join" class="screen">
       <h2>Entrar na Partida</h2>
-      <p class="subtitle">Digite o PIN mostrado no projetor e o seu nome:</p>
+      <p class="subtitle">Digite o PIN do projetor e o seu nome:</p>
       
-      <input type="text" id="inputPin" placeholder="PIN da Sala (Ex: 4821)" maxlength="4">
+      <input type="text" id="inputPin" placeholder="PIN da Sala (Ex: 1234)" maxlength="4">
       <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
       
-      <button class="btn-main" onclick="joinGame()">ENTRAR NA SALA 🚀</button>
+      <button class="btn-main" id="btnJoinAction" onclick="joinGame()">ENTRAR NA SALA 🚀</button>
       <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
     </div>
 
-    <!-- TELA 3: AGUARDANDO NO CELULAR -->
+    <!-- TELA 3: AGUARDANDO -->
     <div id="screen-player-wait" class="screen">
       <h2 id="waitPlayerName">Conectado!</h2>
       <p class="subtitle">Você já está dentro do jogo.</p>
       <div class="pin-display" id="waitPin">0000</div>
-      <p>Olhe para o projetor para acompanhar a roleta!</p>
+      <p>Acompanhe a roleta na tela principal!</p>
     </div>
 
-    <!-- TELA 4: LOBBY DO PROJETOR (HOST) -->
+    <!-- TELA 4: LOBBY DO HOST -->
     <div id="screen-host-lobby" class="screen">
-      <h2>Sala Criada com Sucesso!</h2>
-      <p class="subtitle">Digite este PIN nos celulares para conectar:</p>
+      <h2>Sala Criada!</h2>
+      <p class="subtitle">Digite este PIN nos celulares para entrar:</p>
       <div class="pin-display" id="hostPinDisplay">----</div>
 
       <h3>Jogadores Conectados:</h3>
-      <div class="player-list" id="hostPlayerList">Aguardando jogadores entrarem...</div>
+      <div class="player-list" id="hostPlayerList">Aguardando jogadores...</div>
 
       <button class="btn-main" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
     </div>
 
-    <!-- TELA 5: ROLETA (PROJETOR) -->
+    <!-- TELA 5: ROLETA -->
     <div id="screen-host-wheel" class="screen">
       <div class="turn-bar">
         <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
       </div>
 
-      <h2>Gire a Roleta para Definir os Pontos!</h2>
+      <h2>Gire a Roleta para Sortear a Pontuação!</h2>
 
       <div class="wheel-container">
         <div class="wheel-pointer"></div>
@@ -269,13 +267,10 @@
       </div>
     </div>
 
-    <!-- TELA 7: PLACAR FINAL -->
+    <!-- TELA 7: FIM DE JOGO -->
     <div id="screen-result" class="screen">
       <h1>🏆 FIM DA PARTIDA! 🏆</h1>
-      <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
-
       <div class="scoreboard" id="finalScoreboard"></div>
-
       <button class="btn-main" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
     </div>
 
@@ -294,88 +289,85 @@
     const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
     const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
 
-    let peer = null;
-    let conn = null;
-    let connections = [];
     let isHost = false;
+    let roomPin = "";
+    let myPlayerName = "";
     let players = [];
     let currentPlayerIdx = 0;
     let currentQuestionIdx = 0;
     let currentPointValue = 0;
     let currentAngle = 0;
 
+    // Canal de Comunicação em Tempo Real do Navegador (BroadcastChannel)
+    let channel = null;
+
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    // LÓGICA DO HOST (PROJETOR)
+    function initChannel(pin) {
+      channel = new BroadcastChannel('tgdq_room_' + pin);
+      channel.onmessage = (event) => {
+        handleMessage(event.data);
+      };
+    }
+
+    // MODO HOST
     function startHost() {
       isHost = true;
-      const pin = Math.floor(1000 + Math.random() * 9000).toString();
-      document.getElementById('hostPinDisplay').innerText = pin;
+      roomPin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('hostPinDisplay').innerText = roomPin;
       showScreen('screen-host-lobby');
 
-      // Inicializa o PeerJS com ID prefixado pelo PIN
-      peer = new Peer('senai-tgdq-pin-' + pin);
-
-      peer.on('connection', (c) => {
-        connections.push(c);
-
-        c.on('data', (data) => {
-          if(data.type === 'JOIN') {
-            players.push({ id: c.peer, name: data.name, score: 0 });
-            updateHostPlayerList();
-          } else if(data.type === 'ANSWER') {
-            processAnswer(data.optionIndex);
-          }
-        });
-      });
-
-      peer.on('error', (err) => {
-        alert('Erro ao criar sala. Tente clicar em "CRIAR SALA" novamente.');
-      });
+      initChannel(roomPin);
     }
 
-    function updateHostPlayerList() {
-      const list = document.getElementById('hostPlayerList');
-      list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
-    }
-
-    // LÓGICA DO JOGADOR (CELULAR)
+    // MODO JOGADOR (BOTÃO DE ENTRAR CORRIGIDO E DIRETO)
     function joinGame() {
       const pin = document.getElementById('inputPin').value.trim();
       const name = document.getElementById('inputPlayerName').value.trim();
 
       if(!pin || !name) {
-        alert('Preencha o PIN e seu Nome!');
+        alert('Por favor, preencha o PIN da sala e o seu Nome!');
         return;
       }
 
-      peer = new Peer();
+      roomPin = pin;
+      myPlayerName = name;
 
-      peer.on('open', () => {
-        conn = peer.connect('senai-tgdq-pin-' + pin);
+      initChannel(roomPin);
 
-        conn.on('open', () => {
-          conn.send({ type: 'JOIN', name: name });
-          document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
-          document.getElementById('waitPin').innerText = pin;
-          showScreen('screen-player-wait');
-        });
+      // Envia mensagem de entrada imediatamente
+      channel.postMessage({ type: 'JOIN', name: name });
 
-        conn.on('data', (data) => {
-          if(data.type === 'SHOW_QUESTION') {
-            renderQuestion(data.question, data.playerName, data.points);
-          } else if(data.type === 'GAME_OVER') {
-            renderResult(data.players);
+      document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+      document.getElementById('waitPin').innerText = roomPin;
+      showScreen('screen-player-wait');
+    }
+
+    function handleMessage(data) {
+      if(isHost) {
+        if(data.type === 'JOIN') {
+          if(!players.some(p => p.name === data.name)) {
+            players.push({ name: data.name, score: 0 });
+            updateHostPlayerList();
           }
-        });
-      });
+        } else if(data.type === 'ANSWER') {
+          processAnswer(data.optionIndex);
+        }
+      } else {
+        if(data.type === 'SHOW_QUESTION') {
+          renderQuestion(data.question, data.playerName, data.points);
+        } else if(data.type === 'GAME_OVER') {
+          renderResult(data.players);
+        }
+      }
+    }
 
-      peer.on('error', () => {
-        alert('Não foi possível conectar à sala. Verifique se o PIN está correto!');
-      });
+    function updateHostPlayerList() {
+      const list = document.getElementById('hostPlayerList');
+      list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
     function startHostGame() {
@@ -389,7 +381,7 @@
 
     function nextTurnHost() {
       if(currentQuestionIdx >= questions.length) {
-        broadcast({ type: 'GAME_OVER', players: players });
+        channel.postMessage({ type: 'GAME_OVER', players: players });
         renderResult(players);
         return;
       }
@@ -466,7 +458,7 @@
       const q = questions[currentQuestionIdx];
       const pName = players[currentPlayerIdx].name;
 
-      broadcast({
+      channel.postMessage({
         type: 'SHOW_QUESTION',
         question: q,
         playerName: pName,
@@ -490,8 +482,8 @@
     function sendAnswer(optionIndex) {
       if(isHost) {
         processAnswer(optionIndex);
-      } else if(conn) {
-        conn.send({ type: 'ANSWER', optionIndex: optionIndex });
+      } else {
+        channel.postMessage({ type: 'ANSWER', optionIndex: optionIndex });
       }
     }
 
@@ -510,10 +502,6 @@
       currentQuestionIdx++;
       currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
       nextTurnHost();
-    }
-
-    function broadcast(data) {
-      connections.forEach(c => c.send(data));
     }
 
     function renderResult(pList) {
