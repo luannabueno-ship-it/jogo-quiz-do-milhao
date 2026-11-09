@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz TGDQ SENAI - Edição Kahoot Turma Toda</title>
+  <title>Show do Milhão TGDQ - SENAI</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
@@ -27,7 +27,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 15px;
+      padding: 20px;
     }
 
     .container {
@@ -35,16 +35,17 @@
       max-width: 900px;
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 25px;
+      padding: 30px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
       text-align: center;
+      position: relative;
     }
 
-    h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
-    p.subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 20px; }
+    h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+    p.subtitle { font-size: 1rem; opacity: 0.9; margin-bottom: 20px; }
 
     .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
-    .screen.active { display: flex; animation: fadeIn 0.4s ease-in-out; }
+    .screen.active { display: flex; animation: fadeIn 0.3s ease-in-out; }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -56,18 +57,18 @@
       color: #000;
       border: none;
       padding: 15px 35px;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 900;
       border-radius: 12px;
       cursor: pointer;
       box-shadow: 0 5px 0 #9e7300;
       margin: 10px;
-      transition: transform 0.1s;
+      transition: all 0.1s;
     }
     .btn-main:active { transform: translateY(4px); box-shadow: none; }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* CADASTRO DE ALUNOS */
-    .input-group {
+    .player-input-group {
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
@@ -89,7 +90,7 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       width: 100%;
     }
     .player-tag {
@@ -99,32 +100,35 @@
       font-weight: bold;
     }
 
-    /* TELA KAHOOT JOGO */
-    .timer-bar {
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: var(--yellow);
-      background: rgba(0,0,0,0.3);
-      width: 90px;
-      height: 90px;
+    .wheel-container {
+      position: relative;
+      margin: 15px 0;
+    }
+    #wheelCanvas {
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 15px;
-      border: 4px solid var(--yellow);
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid white;
+      z-index: 10;
     }
 
     .question-box {
       background: white;
       color: #333;
-      padding: 25px;
+      padding: 20px;
       border-radius: 15px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
       margin-bottom: 20px;
       width: 100%;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .options-grid {
@@ -135,53 +139,33 @@
     }
     .opt-btn {
       border: none;
-      padding: 22px;
-      border-radius: 15px;
+      padding: 18px;
+      border-radius: 12px;
       color: white;
-      font-size: 1.2rem;
-      font-weight: 800;
-      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 15px;
-      box-shadow: 0 5px 0 rgba(0,0,0,0.3);
-      transition: transform 0.1s;
+      gap: 12px;
+      text-align: left;
     }
-    .opt-btn:active { transform: translateY(4px); box-shadow: none; }
     .opt-btn.red { background: var(--red); }
     .opt-btn.blue { background: var(--blue); }
     .opt-btn.yellow { background: var(--yellow); color: #000; }
     .opt-btn.green { background: var(--green); }
 
-    .shape { font-size: 1.8rem; }
-
-    /* CHECKLIST DE VOTAÇÃO */
-    .vote-check-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
+    .award-panel {
+      margin-top: 20px;
+      background: rgba(0,0,0,0.2);
+      padding: 15px;
+      border-radius: 15px;
       width: 100%;
-      margin: 20px 0;
-    }
-    .vote-card {
-      background: rgba(255,255,255,0.15);
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      border: 2px solid transparent;
-    }
-    .vote-card.correct {
-      background: var(--green);
-      border-color: #fff;
     }
 
-    /* PLACAR */
     .scoreboard { width: 100%; margin: 20px 0; }
     .score-row {
       background: rgba(255,255,255,0.1);
-      padding: 14px 20px;
+      padding: 12px 20px;
       border-radius: 10px;
       margin-bottom: 8px;
       display: flex;
@@ -189,37 +173,44 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
-
-    @media (max-width: 600px) {
-      .options-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 1.6rem; }
-    }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- TELA 1: CADASTRO DOS ALUNOS DA TURMA -->
+    <!-- TELA 1: CADASTRO DOS GRUPOS/ALUNOS -->
     <div id="screen-setup" class="screen active">
       <h1>Quiz TGDQ SENAI</h1>
-      <p class="subtitle">Cadastre todos os alunos da sala para jogarem juntos!</p>
+      <p class="subtitle">Adicione os participantes ou grupos que vão jogar:</p>
       
-      <div class="input-group">
-        <input type="text" id="playerName" placeholder="Nome do Aluno..." maxlength="15">
-        <button class="btn-main" style="margin:0; padding:12px 20px;" onclick="addPlayer()">+ Add</button>
+      <div class="player-input-group">
+        <input type="text" id="playerName" placeholder="Nome do Grupo ou Aluno..." maxlength="15">
+        <button class="btn-main" style="margin:0; padding:12px 20px;" onclick="addPlayer()">+ Adicionar</button>
       </div>
 
       <div class="player-list" id="playerList"></div>
 
-      <button class="btn-main" onclick="startGame()">INICIAR PARTIDA 🚀</button>
-      <p style="margin-top: 15px; font-size: 0.85rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
+      <button class="btn-main" onclick="startGame()">INICIAR O JOGO 🚀</button>
+      <p style="margin-top: 15px; font-size: 0.85rem; opacity: 0.7;">Projeto TGDQ | Luana, Nathaly e Aryane</p>
     </div>
 
-    <!-- TELA 2: PERGUNTA ESTILO KAHOOT -->
+    <!-- TELA 2: ROLETA DE SORTEIO -->
+    <div id="screen-wheel" class="screen">
+      <h2 id="turnText">Gire a roleta!</h2>
+      
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+      </div>
+
+      <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
+    </div>
+
+    <!-- TELA 3: PERGUNTA NO PROJETOR -->
     <div id="screen-question" class="screen">
-      <div class="timer-bar" id="timer">20</div>
-      <div class="question-box" id="questionText">Texto da Pergunta</div>
+      <h3 style="color: var(--yellow); margin-bottom: 10px;" id="qPointsTitle">VALENDO 100 PONTOS</h3>
+      <div class="question-box" id="questionText">Texto da pergunta</div>
 
       <div class="options-grid">
         <div class="opt-btn red"><span class="shape">▲</span> <span id="opt0">Opção 1</span></div>
@@ -227,64 +218,43 @@
         <div class="opt-btn yellow"><span class="shape">●</span> <span id="opt2">Opção 3</span></div>
         <div class="opt-btn green"><span class="shape">■</span> <span id="opt3">Opção 4</span></div>
       </div>
-    </div>
 
-    <!-- TELA 3: REGISTRO DE ACERTOS -->
-    <div id="screen-scoring" class="screen">
-      <h2>Tempo Esgotado! ⏱️</h2>
-      <p class="subtitle">Clique nos alunos que **ACERTARAM** a resposta correta:</p>
-      <h3 style="color: var(--yellow); margin-bottom: 10px;" id="correctAnswerText"></h3>
-
-      <div class="vote-check-grid" id="voteCheckGrid"></div>
-
-      <button class="btn-main" onclick="confirmScores()">CONFIRMAR PONTOS ➔</button>
+      <div class="award-panel">
+        <p style="margin-bottom: 10px; font-weight: bold;">Quem respondeu certo?</p>
+        <div id="awardButtons"></div>
+        <button class="btn-main" style="background: #666; color: white; font-size: 0.9rem; padding: 8px 15px; margin-top: 10px;" onclick="skipQuestion()">Ninguém acertou (Próxima)</button>
+      </div>
     </div>
 
     <!-- TELA 4: PODIUM FINAL -->
     <div id="screen-result" class="screen">
-      <h1>🏆 RANKING FINAL SENAI 🏆</h1>
-      <p class="subtitle">Parabéns aos vencedores da turma!</p>
+      <h1>🏆 FIM DO QUIZ TGDQ! 🏆</h1>
+      <p class="subtitle">Placar Final da Apresentação</p>
 
       <div class="scoreboard" id="finalScoreboard"></div>
 
-      <button class="btn-main" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
+      <button class="btn-main" onclick="location.reload()">REINICIAR JOGO 🔄</button>
     </div>
 
   </div>
 
   <script>
     const questions = [
-      {
-        q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?",
-        opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"],
-        correct: 1
-      },
-      {
-        q: "Como tratar células ausentes (dados nulos) antes da análise estatística?",
-        opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"],
-        correct: 1
-      },
-      {
-        q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?",
-        opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"],
-        correct: 1
-      },
-      {
-        q: "O que representa o desvio padrão em um conjunto de dados?",
-        opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"],
-        correct: 1
-      },
-      {
-        q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?",
-        opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"],
-        correct: 0
-      }
+      { q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?", opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"], correct: 1 },
+      { q: "Como tratar células ausentes (dados nulos) antes da análise estatística?", opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"], correct: 1 },
+      { q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?", opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"], correct: 1 },
+      { q: "O que representa o desvio padrão em um conjunto de dados?", opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"], correct: 1 },
+      { q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?", opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"], correct: 0 }
     ];
+
+    const wheelSlices = [100, 200, 500, 1000, 0, 2000];
+    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
+    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
 
     let players = [];
     let currentQuestionIdx = 0;
-    let timerInterval = null;
-    let timeLeft = 20;
+    let currentPoints = 100;
+    let currentAngle = 0;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -295,7 +265,7 @@
       const input = document.getElementById('playerName');
       const name = input.value.trim();
       if(name && !players.some(p => p.name === name)) {
-        players.push({ name: name, score: 0, hitThisRound: false });
+        players.push({ name: name, score: 0 });
         input.value = '';
         renderPlayers();
       }
@@ -308,76 +278,119 @@
 
     function startGame() {
       if(players.length === 0) {
-        alert('Adicione pelo menos 1 aluno para iniciar!');
+        alert('Adicione pelo menos 1 participante/grupo!');
         return;
       }
-      loadQuestion();
+      drawWheel(0);
+      showScreen('screen-wheel');
     }
 
-    function loadQuestion() {
+    function drawWheel(angle) {
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const radius = canvas.width / 2;
+      const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(angle);
+
+      for (let i = 0; i < wheelSlices.length; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = sliceColors[i];
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
+        ctx.fill();
+
+        ctx.save();
+        ctx.rotate(i * sliceAngle + sliceAngle / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px Montserrat';
+        ctx.textAlign = 'right';
+        ctx.fillText(sliceLabels[i], radius - 15, 5);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function spinWheel() {
+      document.getElementById('btnSpin').disabled = true;
+
+      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
+      const sliceAngleDeg = 360 / wheelSlices.length;
+      const targetAngleDeg = 270 - (selectedIndex * sliceAngleDeg + sliceAngleDeg / 2);
+      const totalRotationDeg = (360 * 5) + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
+      
+      const startAngle = currentAngle;
+      const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
+      const duration = 3500;
+      let startTime = null;
+
+      function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        currentAngle = startAngle + (targetAngleRad - startAngle) * (1 - Math.pow(1 - progress, 3));
+        drawWheel(currentAngle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentPoints = wheelSlices[selectedIndex];
+          document.getElementById('btnSpin').disabled = false;
+          if (currentPoints === 0) {
+            alert("PASSA A VEZ! Girando novamente...");
+          } else {
+            showQuestion();
+          }
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function showQuestion() {
       if(currentQuestionIdx >= questions.length) {
         showFinalResult();
         return;
       }
 
       const q = questions[currentQuestionIdx];
+      document.getElementById('qPointsTitle').innerText = `VALENDO ${currentPoints} PONTOS!`;
       document.getElementById('questionText').innerText = q.q;
-      for(let i = 0; i < 4; i++) {
+
+      for (let i = 0; i < 4; i++) {
         document.getElementById(`opt${i}`).innerText = q.opts[i];
       }
 
-      showScreen('screen-question');
-
-      timeLeft = 20;
-      document.getElementById('timer').innerText = timeLeft;
-      
-      clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').innerText = timeLeft;
-        if(timeLeft <= 0) {
-          clearInterval(timerInterval);
-          openScoringScreen();
-        }
-      }, 1000);
-    }
-
-    function openScoringScreen() {
-      const q = questions[currentQuestionIdx];
-      document.getElementById('correctAnswerText').innerText = `Resposta Certa: ${q.opts[q.correct]}`;
-
-      players.forEach(p => p.hitThisRound = false);
-
-      const grid = document.getElementById('voteCheckGrid');
-      grid.innerHTML = players.map((p, idx) => `
-        <div class="vote-card" id="p-card-${idx}" onclick="toggleHit(${idx})">
-          👤 ${p.name}
-        </div>
+      const btnContainer = document.getElementById('awardButtons');
+      btnContainer.innerHTML = players.map((p, idx) => `
+        <button class="btn-main" style="padding: 10px 20px; font-size: 1rem;" onclick="givePoints(${idx})">
+          +${currentPoints} pts para ${p.name}
+        </button>
       `).join('');
 
-      showScreen('screen-scoring');
+      showScreen('screen-question');
     }
 
-    function toggleHit(idx) {
-      players[idx].hitThisRound = !players[idx].hitThisRound;
-      const card = document.getElementById(`p-card-${idx}`);
-      if(players[idx].hitThisRound) {
-        card.classList.add('correct');
+    function givePoints(playerIdx) {
+      confetti({ particleCount: 100, spread: 70 });
+      players[playerIdx].score += currentPoints;
+      currentQuestionIdx++;
+
+      if(currentQuestionIdx >= questions.length) {
+        showFinalResult();
       } else {
-        card.classList.remove('correct');
+        showScreen('screen-wheel');
       }
     }
 
-    function confirmScores() {
-      players.forEach(p => {
-        if(p.hitThisRound) {
-          p.score += 1000;
-        }
-      });
-
-      confetti({ particleCount: 70, spread: 60 });
+    function skipQuestion() {
       currentQuestionIdx++;
-      loadQuestion();
+      if(currentQuestionIdx >= questions.length) {
+        showFinalResult();
+      } else {
+        showScreen('screen-wheel');
+      }
     }
 
     function showFinalResult() {
