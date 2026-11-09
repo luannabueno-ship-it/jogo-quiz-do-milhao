@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz TGDQ SENAI - Edição Kahoot Coletivo</title>
+  <title>Quiz TGDQ SENAI - Kahoot Realtime</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   
   <style>
     :root {
@@ -35,7 +36,7 @@
       max-width: 900px;
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 25px;
+      padding: 30px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
       text-align: center;
     }
@@ -56,7 +57,7 @@
       color: #000;
       border: none;
       padding: 15px 35px;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 900;
       border-radius: 12px;
       cursor: pointer;
@@ -65,22 +66,30 @@
       transition: transform 0.1s;
     }
     .btn-main:active { transform: translateY(4px); box-shadow: none; }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 450px;
-    }
-    input[type="text"] {
-      flex: 1;
+    input[type="text"], input[type="number"] {
       padding: 14px;
       border-radius: 10px;
       border: none;
       font-size: 1.1rem;
       outline: none;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
       font-weight: bold;
+    }
+
+    .pin-display {
+      font-size: 3.5rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      color: var(--yellow);
+      background: rgba(0,0,0,0.3);
+      padding: 10px 30px;
+      border-radius: 15px;
+      margin: 15px 0;
     }
 
     .player-list {
@@ -88,41 +97,57 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 20px;
+      margin: 20px 0;
       width: 100%;
     }
     .player-tag {
       background: rgba(255,255,255,0.2);
-      padding: 8px 16px;
+      padding: 10px 20px;
       border-radius: 20px;
       font-weight: bold;
+      font-size: 1.1rem;
     }
 
-    .timer-bar {
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: var(--yellow);
-      background: rgba(0,0,0,0.3);
-      width: 90px;
-      height: 90px;
+    .wheel-container {
+      position: relative;
+      margin: 15px 0;
+    }
+    #wheelCanvas {
       border-radius: 50%;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .wheel-pointer {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid white;
+      z-index: 10;
+    }
+
+    .turn-bar {
+      width: 100%;
+      background: rgba(0,0,0,0.2);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 15px;
-      border: 4px solid var(--yellow);
     }
 
     .question-box {
       background: white;
       color: #333;
-      padding: 25px;
+      padding: 22px;
       border-radius: 15px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
       margin-bottom: 20px;
       width: 100%;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .options-grid {
@@ -133,48 +158,26 @@
     }
     .opt-btn {
       border: none;
-      padding: 22px;
-      border-radius: 15px;
+      padding: 20px;
+      border-radius: 12px;
       color: white;
-      font-size: 1.2rem;
-      font-weight: 800;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 15px;
-      box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+      box-shadow: 0 4px 0 rgba(0,0,0,0.3);
     }
     .opt-btn.red { background: var(--red); }
     .opt-btn.blue { background: var(--blue); }
     .opt-btn.yellow { background: var(--yellow); color: #000; }
     .opt-btn.green { background: var(--green); }
 
-    .shape { font-size: 1.8rem; }
-
-    .vote-check-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-      width: 100%;
-      margin: 20px 0;
-    }
-    .vote-card {
-      background: rgba(255,255,255,0.15);
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      border: 2px solid transparent;
-    }
-    .vote-card.correct {
-      background: var(--green);
-      border-color: #fff;
-    }
-
     .scoreboard { width: 100%; margin: 20px 0; }
     .score-row {
       background: rgba(255,255,255,0.1);
-      padding: 14px 20px;
+      padding: 12px 20px;
       border-radius: 10px;
       margin-bottom: 8px;
       display: flex;
@@ -182,56 +185,96 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
+
+    @media (max-width: 600px) {
+      .options-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- TELA 1: CADASTRO DOS JOGADORES OU GRUPOS -->
-    <div id="screen-setup" class="screen active">
+    <!-- TELA 1: MODALIDADE INICIAL -->
+    <div id="screen-welcome" class="screen active">
       <h1>Quiz TGDQ SENAI</h1>
-      <p class="subtitle">Adicione todos os alunos ou grupos que vão jogar:</p>
+      <p class="subtitle">Multiplayer em Tempo Real para Vários Dispositivos</p>
       
-      <div class="input-group">
-        <input type="text" id="playerName" placeholder="Nome do Aluno ou Grupo..." maxlength="15">
-        <button class="btn-main" style="margin:0; padding:12px 20px;" onclick="addPlayer()">+ Add</button>
-      </div>
-
-      <div class="player-list" id="playerList"></div>
-
-      <button class="btn-main" onclick="startGame()">INICIAR PARTIDA 🚀</button>
-      <p style="margin-top: 15px; font-size: 0.85rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
+      <button class="btn-main" onclick="initHost()">🖥️ CRIAR SALA (PROJETOR / HOST)</button>
+      <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (CELULAR)</button>
+      
+      <p style="margin-top: 25px; font-size: 0.85rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA 2: PERGUNTA ESTILO KAHOOT -->
+    <!-- TELA 2: ALUNO DIGITA PIN (CELULAR) -->
+    <div id="screen-join" class="screen">
+      <h2>Entrar no Jogo</h2>
+      <p class="subtitle">Digite o PIN do projetor e o seu nome:</p>
+      
+      <input type="number" id="inputPin" placeholder="PIN da Sala (Ex: 4821)">
+      <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
+      
+      <button class="btn-main" onclick="joinRoom()">ENTRAR NA SALA 🚀</button>
+      <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
+    </div>
+
+    <!-- TELA 3: AGUARDANDO NO CELULAR -->
+    <div id="screen-player-wait" class="screen">
+      <h2 id="waitPlayerName">Conectado!</h2>
+      <p class="subtitle">Você está na partida. Aguarde o Host começar!</p>
+      <div class="pin-display" id="waitPin">0000</div>
+      <p>Acompanhe a tela do projetor!</p>
+    </div>
+
+    <!-- TELA 4: LOBBY NO PROJETOR (HOST) -->
+    <div id="screen-host-lobby" class="screen">
+      <h2>Sala Aberta!</h2>
+      <p class="subtitle">Insira este PIN nos celulares dos alunos:</p>
+      <div class="pin-display" id="hostPinDisplay">GERANDO...</div>
+
+      <h3>Alunos Conectados:</h3>
+      <div class="player-list" id="hostPlayerList">Aguardando conexões...</div>
+
+      <button class="btn-main" id="btnStartGame" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
+    </div>
+
+    <!-- TELA 5: ROLETA NO PROJETOR -->
+    <div id="screen-host-wheel" class="screen">
+      <div class="turn-bar">
+        <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
+      </div>
+
+      <h2>Gire a Roleta para Definir a Pontuação!</h2>
+
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+      </div>
+
+      <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
+    </div>
+
+    <!-- TELA 6: PERGUNTA (PROJETOR E CELULAR) -->
     <div id="screen-question" class="screen">
-      <div class="timer-bar" id="timer">20</div>
-      <div class="question-box" id="questionText">Texto da Pergunta</div>
+      <div class="turn-bar">
+        <span>Vez de: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
+        <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
+      </div>
+
+      <div class="question-box" id="questionText">Carregando pergunta...</div>
 
       <div class="options-grid">
-        <div class="opt-btn red"><span class="shape">▲</span> <span id="opt0">Opção 1</span></div>
-        <div class="opt-btn blue"><span class="shape">◆</span> <span id="opt1">Opção 2</span></div>
-        <div class="opt-btn yellow"><span class="shape">●</span> <span id="opt2">Opção 3</span></div>
-        <div class="opt-btn green"><span class="shape">■</span> <span id="opt3">Opção 4</span></div>
+        <button class="opt-btn red" onclick="submitAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
+        <button class="opt-btn blue" onclick="submitAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
+        <button class="opt-btn yellow" onclick="submitAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
+        <button class="opt-btn green" onclick="submitAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
       </div>
     </div>
 
-    <!-- TELA 3: MARCAR QUEM ACERTOU -->
-    <div id="screen-scoring" class="screen">
-      <h2>Tempo Esgotado! ⏱️</h2>
-      <p class="subtitle">Clique nos nomes dos alunos que **ACERTARAM**:</p>
-      <h3 style="color: var(--yellow); margin-bottom: 10px;" id="correctAnswerText"></h3>
-
-      <div class="vote-check-grid" id="voteCheckGrid"></div>
-
-      <button class="btn-main" onclick="confirmScores()">CONFIRMAR PONTOS ➔</button>
-    </div>
-
-    <!-- TELA 4: RANKING FINAL -->
+    <!-- TELA 7: RANKING FINAL -->
     <div id="screen-result" class="screen">
-      <h1>🏆 RANKING FINAL SENAI 🏆</h1>
-      <p class="subtitle">Parabéns aos vencedores!</p>
+      <h1>🏆 FIM DA PARTIDA! 🏆</h1>
+      <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
 
       <div class="scoreboard" id="finalScoreboard"></div>
 
@@ -249,117 +292,249 @@
       { q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?", opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"], correct: 0 }
     ];
 
+    const wheelSlices = [100, 200, 500, 1000, 0, 2000];
+    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
+    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
+
+    let peer = null;
+    let connections = [];
+    let hostConn = null;
+    let isHost = false;
+    let roomPin = "";
+    let myPlayerName = "";
     let players = [];
+    let currentPlayerIdx = 0;
     let currentQuestionIdx = 0;
-    let timerInterval = null;
-    let timeLeft = 20;
+    let currentPointValue = 0;
+    let currentAngle = 0;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    function addPlayer() {
-      const input = document.getElementById('playerName');
-      const name = input.value.trim();
-      if(name && !players.some(p => p.name === name)) {
-        players.push({ name: name, score: 0, hitThisRound: false });
-        input.value = '';
-        renderPlayers();
-      }
+    // INICIALIZAÇÃO DO HOST (COMPUTADOR / PROJETOR)
+    function initHost() {
+      isHost = true;
+      roomPin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('hostPinDisplay').innerText = roomPin;
+      showScreen('screen-host-lobby');
+
+      // Cria servidor P2P usando o PIN como ID único
+      peer = new Peer('tgdq-senai-room-' + roomPin);
+
+      peer.on('open', () => {
+        console.log('Sala Host aberta com PIN:', roomPin);
+      });
+
+      peer.on('connection', (c) => {
+        connections.push(c);
+        c.on('data', (data) => {
+          if (data.type === 'JOIN') {
+            if (!players.some(p => p.name === data.name)) {
+              players.push({ name: data.name, score: 0 });
+              updateHostPlayerList();
+              broadcast({ type: 'PLAYER_LIST', players: players });
+            }
+          } else if (data.type === 'ANSWER') {
+            processAnswer(data.optionIndex);
+          }
+        });
+      });
     }
 
-    function renderPlayers() {
-      const list = document.getElementById('playerList');
+    function updateHostPlayerList() {
+      const list = document.getElementById('hostPlayerList');
       list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
-    function startGame() {
-      if(players.length === 0) {
-        alert('Adicione pelo menos 1 participante para iniciar!');
-        return;
-      }
-      loadQuestion();
-    }
+    // INICIALIZAÇÃO DO JOGADOR (CELULAR)
+    function joinRoom() {
+      const pin = document.getElementById('inputPin').value.trim();
+      const name = document.getElementById('inputPlayerName').value.trim();
 
-    function loadQuestion() {
-      if(currentQuestionIdx >= questions.length) {
-        showFinalResult();
+      if (!pin || !name) {
+        alert('Por favor, digite o PIN e seu Nome!');
         return;
       }
 
-      const q = questions[currentQuestionIdx];
-      document.getElementById('questionText').innerText = q.q;
-      for(let i = 0; i < 4; i++) {
-        document.getElementById(`opt${i}`).innerText = q.opts[i];
-      }
+      roomPin = pin;
+      myPlayerName = name;
 
-      showScreen('screen-question');
+      peer = new Peer();
 
-      timeLeft = 20;
-      document.getElementById('timer').innerText = timeLeft;
-      
-      clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').innerText = timeLeft;
-        if(timeLeft <= 0) {
-          clearInterval(timerInterval);
-          openScoringScreen();
-        }
-      }, 1000);
-    }
+      peer.on('open', () => {
+        hostConn = peer.connect('tgdq-senai-room-' + pin);
 
-    function openScoringScreen() {
-      const q = questions[currentQuestionIdx];
-      document.getElementById('correctAnswerText').innerText = `Resposta Certa: ${q.opts[q.correct]}`;
+        hostConn.on('open', () => {
+          hostConn.send({ type: 'JOIN', name: name });
+          document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+          document.getElementById('waitPin').innerText = roomPin;
+          showScreen('screen-player-wait');
+        });
 
-      players.forEach(p => p.hitThisRound = false);
-
-      const grid = document.getElementById('voteCheckGrid');
-      grid.innerHTML = players.map((p, idx) => `
-        <div class="vote-card" id="p-card-${idx}" onclick="toggleHit(${idx})">
-          👤 ${p.name}
-        </div>
-      `).join('');
-
-      showScreen('screen-scoring');
-    }
-
-    function toggleHit(idx) {
-      players[idx].hitThisRound = !players[idx].hitThisRound;
-      const card = document.getElementById(`p-card-${idx}`);
-      if(players[idx].hitThisRound) {
-        card.classList.add('correct');
-      } else {
-        card.classList.remove('correct');
-      }
-    }
-
-    function confirmScores() {
-      players.forEach(p => {
-        if(p.hitThisRound) {
-          p.score += 1000;
-        }
+        hostConn.on('data', (data) => {
+          if (data.type === 'SHOW_QUESTION') {
+            renderQuestion(data.question, data.playerName, data.points);
+          } else if (data.type === 'GAME_OVER') {
+            renderResult(data.players);
+          }
+        });
       });
 
-      confetti({ particleCount: 70, spread: 60 });
-      currentQuestionIdx++;
-      loadQuestion();
+      peer.on('error', () => {
+        alert('Sala não encontrada! Verifique se o PIN digitado está correto.');
+      });
     }
 
-    function showFinalResult() {
-      confetti({ particleCount: 200, spread: 100 });
-      players.sort((a, b) => b.score - a.score);
+    function startHostGame() {
+      if (players.length === 0) {
+        alert('Aguarde pelo menos 1 jogador se conectar pelo celular!');
+        return;
+      }
+      drawWheel(0);
+      nextHostTurn();
+    }
 
+    function nextHostTurn() {
+      if (currentQuestionIdx >= questions.length) {
+        broadcast({ type: 'GAME_OVER', players: players });
+        renderResult(players);
+        return;
+      }
+      document.getElementById('wheelPlayerName').innerText = players[currentPlayerIdx].name;
+      document.getElementById('btnSpin').disabled = false;
+      showScreen('screen-host-wheel');
+    }
+
+    function drawWheel(angle) {
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const radius = canvas.width / 2;
+      const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(angle);
+
+      for (let i = 0; i < wheelSlices.length; i++) {
+        ctx.beginPath();
+        ctx.fillStyle = sliceColors[i];
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
+        ctx.fill();
+
+        ctx.save();
+        ctx.rotate(i * sliceAngle + sliceAngle / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px Montserrat';
+        ctx.textAlign = 'right';
+        ctx.fillText(sliceLabels[i], radius - 15, 5);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function spinWheel() {
+      document.getElementById('btnSpin').disabled = true;
+
+      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
+      const sliceAngleDeg = 360 / wheelSlices.length;
+      const targetAngleDeg = 270 - (selectedIndex * sliceAngleDeg + sliceAngleDeg / 2);
+      const totalRotationDeg = (360 * 5) + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
+      
+      const startAngle = currentAngle;
+      const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
+      const duration = 4000;
+      let startTime = null;
+
+      function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        currentAngle = startAngle + (targetAngleRad - startAngle) * (1 - Math.pow(1 - progress, 3));
+        drawWheel(currentAngle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentPointValue = wheelSlices[selectedIndex];
+          if (currentPointValue === 0) {
+            alert(`PASSA A VEZ para ${players[currentPlayerIdx].name}!`);
+            currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+            nextHostTurn();
+          } else {
+            sendQuestionToAll();
+          }
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function sendQuestionToAll() {
+      const q = questions[currentQuestionIdx];
+      const pName = players[currentPlayerIdx].name;
+
+      broadcast({
+        type: 'SHOW_QUESTION',
+        question: q,
+        playerName: pName,
+        points: currentPointValue
+      });
+
+      renderQuestion(q, pName, currentPointValue);
+    }
+
+    function renderQuestion(q, playerName, points) {
+      document.getElementById('qPlayerName').innerText = playerName;
+      document.getElementById('qValue').innerText = `${points} PTS`;
+      document.getElementById('questionText').innerText = q.q;
+
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`opt${i}`).innerText = q.opts[i];
+      }
+      showScreen('screen-question');
+    }
+
+    function submitAnswer(optionIndex) {
+      if (isHost) {
+        processAnswer(optionIndex);
+      } else if (hostConn) {
+        hostConn.send({ type: 'ANSWER', optionIndex: optionIndex });
+      }
+    }
+
+    function processAnswer(optionIndex) {
+      if (!isHost) return;
+
+      const q = questions[currentQuestionIdx];
+      if (optionIndex === q.correct) {
+        confetti({ particleCount: 100, spread: 70 });
+        players[currentPlayerIdx].score += currentPointValue;
+        alert(`RESPOSTA CERTA! +${currentPointValue} Pontos!`);
+      } else {
+        alert(`RESPOSTA INCORRETA! A certa era: ${q.opts[q.correct]}`);
+      }
+
+      currentQuestionIdx++;
+      currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+      nextHostTurn();
+    }
+
+    function broadcast(data) {
+      connections.forEach(c => c.send(data));
+    }
+
+    function renderResult(pList) {
+      confetti({ particleCount: 200, spread: 100 });
+      const sorted = [...pList].sort((a,b) => b.score - a.score);
       const board = document.getElementById('finalScoreboard');
-      board.innerHTML = players.map((p, idx) => `
+      board.innerHTML = sorted.map((p, idx) => `
         <div class="score-row">
           <span>${idx + 1}º ${p.name}</span>
           <span>${p.score} PTS</span>
         </div>
       `).join('');
-
       showScreen('screen-result');
     }
   </script>
