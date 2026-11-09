@@ -6,7 +6,8 @@
   <title>Quiz TGDQ SENAI - Kahoot Realtime</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- Servidor MQTT sobre WebSockets de Alta Conectividade Livre -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   
   <style>
     :root {
@@ -214,7 +215,7 @@
       <input type="number" id="inputPin" placeholder="PIN da Sala (Ex: 4821)">
       <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
       
-      <button class="btn-main" onclick="joinRoom()">ENTRAR NA SALA 🚀</button>
+      <button class="btn-main" id="btnJoinAction" onclick="joinRoom()">ENTRAR NA SALA 🚀</button>
       <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
     </div>
 
@@ -230,7 +231,7 @@
     <div id="screen-host-lobby" class="screen">
       <h2>Sala Aberta!</h2>
       <p class="subtitle">Insira este PIN nos celulares dos alunos:</p>
-      <div class="pin-display" id="hostPinDisplay">GERANDO...</div>
+      <div class="pin-display" id="hostPinDisplay">----</div>
 
       <h3>Alunos Conectados:</h3>
       <div class="player-list" id="hostPlayerList">Aguardando conexões...</div>
@@ -296,9 +297,7 @@
     const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
     const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
 
-    let peer = null;
-    let connections = [];
-    let hostConn = null;
+    let client = null;
     let isHost = false;
     let roomPin = "";
     let myPlayerName = "";
@@ -313,33 +312,40 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // INICIALIZAÇÃO DO HOST (COMPUTADOR / PROJETOR)
+    function connectBroker(onConnected) {
+      // Conexão direta ao broker público EMQX via WebSockets
+      client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+        clientId: 'tgdq_' + Math.random().toString(16).substr(2, 8),
+        keepalive: 60
+      });
+
+      client.on('connect', () => {
+        onConnected();
+      });
+
+      client.on('message', (topic, payload) => {
+        try {
+          const msg = JSON.parse(payload.toString());
+          handleMessage(msg);
+        } catch (e) {}
+      });
+    }
+
+    function publishMsg(msg) {
+      if (client && roomPin) {
+        client.publish(`tgdq/room/${roomPin}`, JSON.stringify(msg));
+      }
+    }
+
+    // INICIALIZAÇÃO DO HOST
     function initHost() {
       isHost = true;
       roomPin = Math.floor(1000 + Math.random() * 9000).toString();
       document.getElementById('hostPinDisplay').innerText = roomPin;
       showScreen('screen-host-lobby');
 
-      // Cria servidor P2P usando o PIN como ID único
-      peer = new Peer('tgdq-senai-room-' + roomPin);
-
-      peer.on('open', () => {
-        console.log('Sala Host aberta com PIN:', roomPin);
-      });
-
-      peer.on('connection', (c) => {
-        connections.push(c);
-        c.on('data', (data) => {
-          if (data.type === 'JOIN') {
-            if (!players.some(p => p.name === data.name)) {
-              players.push({ name: data.name, score: 0 });
-              updateHostPlayerList();
-              broadcast({ type: 'PLAYER_LIST', players: players });
-            }
-          } else if (data.type === 'ANSWER') {
-            processAnswer(data.optionIndex);
-          }
-        });
+      connectBroker(() => {
+        client.subscribe(`tgdq/room/${roomPin}`);
       });
     }
 
@@ -358,33 +364,40 @@
         return;
       }
 
+      const btn = document.getElementById('btnJoinAction');
+      btn.innerText = "CONECTANDO...";
+      btn.disabled = true;
+
       roomPin = pin;
       myPlayerName = name;
 
-      peer = new Peer();
+      connectBroker(() => {
+        client.subscribe(`tgdq/room/${roomPin}`);
+        publishMsg({ type: 'JOIN', name: name });
 
-      peer.on('open', () => {
-        hostConn = peer.connect('tgdq-senai-room-' + pin);
+        document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+        document.getElementById('waitPin').innerText = roomPin;
+        showScreen('screen-player-wait');
+      });
+    }
 
-        hostConn.on('open', () => {
-          hostConn.send({ type: 'JOIN', name: name });
-          document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
-          document.getElementById('waitPin').innerText = roomPin;
-          showScreen('screen-player-wait');
-        });
-
-        hostConn.on('data', (data) => {
-          if (data.type === 'SHOW_QUESTION') {
-            renderQuestion(data.question, data.playerName, data.points);
-          } else if (data.type === 'GAME_OVER') {
-            renderResult(data.players);
+    function handleMessage(msg) {
+      if (isHost) {
+        if (msg.type === 'JOIN') {
+          if (!players.some(p => p.name === msg.name)) {
+            players.push({ name: msg.name, score: 0 });
+            updateHostPlayerList();
           }
-        });
-      });
-
-      peer.on('error', () => {
-        alert('Sala não encontrada! Verifique se o PIN digitado está correto.');
-      });
+        } else if (msg.type === 'SUBMIT_ANSWER') {
+          processAnswer(msg.optionIndex);
+        }
+      } else {
+        if (msg.type === 'SHOW_QUESTION') {
+          renderQuestion(msg.question, msg.playerName, msg.points);
+        } else if (msg.type === 'GAME_OVER') {
+          renderResult(msg.players);
+        }
+      }
     }
 
     function startHostGame() {
@@ -398,7 +411,7 @@
 
     function nextHostTurn() {
       if (currentQuestionIdx >= questions.length) {
-        broadcast({ type: 'GAME_OVER', players: players });
+        publishMsg({ type: 'GAME_OVER', players: players });
         renderResult(players);
         return;
       }
@@ -475,13 +488,14 @@
       const q = questions[currentQuestionIdx];
       const pName = players[currentPlayerIdx].name;
 
-      broadcast({
+      const payload = {
         type: 'SHOW_QUESTION',
         question: q,
         playerName: pName,
         points: currentPointValue
-      });
+      };
 
+      publishMsg(payload);
       renderQuestion(q, pName, currentPointValue);
     }
 
@@ -499,8 +513,8 @@
     function submitAnswer(optionIndex) {
       if (isHost) {
         processAnswer(optionIndex);
-      } else if (hostConn) {
-        hostConn.send({ type: 'ANSWER', optionIndex: optionIndex });
+      } else {
+        publishMsg({ type: 'SUBMIT_ANSWER', optionIndex: optionIndex });
       }
     }
 
@@ -519,10 +533,6 @@
       currentQuestionIdx++;
       currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
       nextHostTurn();
-    }
-
-    function broadcast(data) {
-      connections.forEach(c => c.send(data));
     }
 
     function renderResult(pList) {
