@@ -111,16 +111,19 @@
       transition: all 0.1s;
     }
     .btn-main:active { transform: translateY(4px); box-shadow: none; }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ROLETA */
     .wheel-container {
       position: relative;
       margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     #wheelCanvas {
       border-radius: 50%;
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
-      transition: transform 4s cubic-bezier(0.15, 0.99, 0.15, 0.99);
     }
     .wheel-pointer {
       position: absolute;
@@ -148,7 +151,7 @@
     }
     .current-player { font-size: 1.3rem; font-weight: 900; color: var(--yellow); }
 
-    /* PERGUNTA & KAKOOT BUTTONS */
+    /* PERGUNTA & KAHOOT BUTTONS */
     .question-box {
       background: white;
       color: #333;
@@ -316,7 +319,9 @@
     const wheelSlices = [100, 200, 500, 1000, 0, 2000];
     const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
     const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA A VEZ', '2.000 Pts!'];
+    
     let currentRotation = 0;
+    let isSpinning = false;
 
     // GERENCIADOR DE TELAS
     function showScreen(id) {
@@ -357,6 +362,7 @@
       }
       document.getElementById('wheelPlayerName').innerText = players[currentPlayerIdx].name;
       document.getElementById('btnSpin').disabled = false;
+      isSpinning = false;
       showScreen('screen-wheel');
     }
 
@@ -388,33 +394,42 @@
       }
     }
 
-    // GIRAR ROLETA
+    // GIRAR ROLETA (CORRIGIDA)
     function spinWheel() {
+      if(isSpinning) return;
+      isSpinning = true;
+
       const btn = document.getElementById('btnSpin');
       btn.disabled = true;
 
-      const spins = 5; // quantidade de voltas completas
-      const randomIndex = Math.floor(Math.random() * wheelSlices.length);
-      const sliceAngle = 360 / wheelSlices.length;
-      
-      // Cálculo do ângulo exato para parar no setor correto
-      const targetDegree = 360 - (randomIndex * sliceAngle) - (sliceAngle / 2);
-      const totalRotation = (spins * 360) + targetDegree;
-
-      currentRotation += totalRotation;
       const canvas = document.getElementById('wheelCanvas');
-      canvas.style.transform = `rotate(${currentRotation}deg)`;
+      
+      // Escolhe um setor aleatório
+      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
+      const sliceAngle = 360 / wheelSlices.length;
+
+      // Cálculo exato para o ponteiro (que está no topo, 270 graus)
+      const targetAngle = 270 - (selectedIndex * sliceAngle + sliceAngle / 2);
+      const extraSpins = 360 * 5; // 5 voltas completas
+      
+      // Garante rotação contínua e suave
+      const finalRotation = currentRotation + extraSpins + (targetAngle - (currentRotation % 360));
+      currentRotation = finalRotation;
+
+      canvas.style.transition = 'transform 4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      canvas.style.transform = `rotate(${finalRotation}deg)`;
 
       setTimeout(() => {
-        currentPointValue = wheelSlices[randomIndex];
+        currentPointValue = wheelSlices[selectedIndex];
+        
         if(currentPointValue === 0) {
-          alert(`Ops! ${players[currentPlayerIdx].name} tirou PASSA A VEZ!`);
+          alert(`Ops! ${players[currentPlayerIdx].name} caiu no PASSA A VEZ!`);
           currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
           nextTurn();
         } else {
           showQuestion();
         }
-      }, 4000);
+      }, 4200);
     }
 
     // EXIBIR PERGUNTA
@@ -464,7 +479,11 @@
     }
 
     // Inicializa a roleta ao carregar
-    drawWheel();
+    window.onload = () => {
+      drawWheel();
+    };
   </script>
 </body>
 </html>
+
+
