@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Show do Milhão TGDQ - Edição Kahoot & Roleta</title>
+  <title>Show do Milhão TGDQ - Kahoot Multiplayer em Tempo Real</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
+  <!-- Firebase App & Firestore (v9 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg-purple: #46178f;
@@ -42,10 +46,9 @@
       overflow: hidden;
     }
 
-    h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
-    p.subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 20px; }
+    h1 { font-size: 2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+    p.subtitle { font-size: 1rem; opacity: 0.9; margin-bottom: 20px; }
 
-    /* TELAS */
     .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
     .screen.active { display: flex; animation: fadeIn 0.4s ease-in-out; }
 
@@ -54,30 +57,44 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* INPUT DE JOGADORES */
-    .player-input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 400px;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 12px 15px;
-      border-radius: 10px;
+    .btn-main {
+      background: var(--yellow);
+      color: #000;
       border: none;
-      font-size: 1rem;
-      outline: none;
-    }
-    .btn-add {
-      background: var(--green);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-weight: bold;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      font-weight: 900;
+      border-radius: 12px;
       cursor: pointer;
+      box-shadow: 0 5px 0 #9e7300;
+      margin: 10px;
+      transition: all 0.1s;
+    }
+    .btn-main:active { transform: translateY(4px); box-shadow: none; }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input[type="text"], input[type="number"] {
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1.1rem;
+      outline: none;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .pin-display {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: var(--yellow);
+      background: rgba(0,0,0,0.3);
+      padding: 10px 30px;
+      border-radius: 15px;
+      margin: 15px 0;
     }
 
     .player-list {
@@ -85,41 +102,20 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 25px;
+      margin: 20px 0;
       width: 100%;
     }
     .player-tag {
       background: rgba(255,255,255,0.2);
-      padding: 8px 16px;
+      padding: 10px 20px;
       border-radius: 20px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 1.1rem;
     }
 
-    .btn-main {
-      background: var(--yellow);
-      color: #000;
-      border: none;
-      padding: 15px 40px;
-      font-size: 1.3rem;
-      font-weight: 900;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 5px 0 #9e7300;
-      transition: all 0.1s;
-    }
-    .btn-main:active { transform: translateY(4px); box-shadow: none; }
-    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ROLETA */
     .wheel-container {
       position: relative;
       margin: 20px 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
     #wheelCanvas {
       border-radius: 50%;
@@ -130,15 +126,13 @@
       top: -15px;
       left: 50%;
       transform: translateX(-50%);
-      width: 0;
-      height: 0;
+      width: 0; height: 0;
       border-left: 15px solid transparent;
       border-right: 15px solid transparent;
       border-top: 25px solid white;
       z-index: 10;
     }
 
-    /* PLACAR & TURNO */
     .turn-bar {
       width: 100%;
       background: rgba(0,0,0,0.2);
@@ -149,19 +143,16 @@
       justify-content: space-between;
       align-items: center;
     }
-    .current-player { font-size: 1.3rem; font-weight: 900; color: var(--yellow); }
 
-    /* PERGUNTA & KAHOOT BUTTONS */
     .question-box {
       background: white;
       color: #333;
-      padding: 25px;
+      padding: 20px;
       border-radius: 15px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       width: 100%;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .options-grid {
@@ -174,6 +165,442 @@
       border: none;
       padding: 20px;
       border-radius: 12px;
-      color
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+    }
+    .opt-btn.red { background: var(--red); }
+    .opt-btn.blue { background: var(--blue); }
+    .opt-btn.yellow { background: var(--yellow); color: #000; }
+    .opt-btn.green { background: var(--green); }
 
+    .scoreboard { width: 100%; margin: 20px 0; }
+    .score-row {
+      background: rgba(255,255,255,0.1);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
 
+  <div class="container">
+    
+    <!-- TELA INICIAL: ESCOLHA DE MODO -->
+    <div id="screen-welcome" class="screen active">
+      <h1>Quiz do Milhão TGDQ</h1>
+      <p class="subtitle">Multiplayer em Tempo Real (Aparelhos Diferentes)</p>
+      
+      <button class="btn-main" onclick="initHost()">🖥️ CRIAR SALA (PROJETOR / HOST)</button>
+      <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (JOGADOR)</button>
+      
+      <p style="margin-top: 25px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
+    </div>
+
+    <!-- TELA JOGADOR: ENTRAR COM PIN -->
+    <div id="screen-join" class="screen">
+      <h2>Entrar no Jogo</h2>
+      <p class="subtitle">Digite o PIN do projetor e o seu nome</p>
+      
+      <input type="number" id="inputPin" placeholder="PIN da Sala (4 dígitos)">
+      <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
+      
+      <button class="btn-main" onclick="joinRoom()">ENTRAR NA SALA 🚀</button>
+      <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
+    </div>
+
+    <!-- TELA JOGADOR: AGUARDANDO -->
+    <div id="screen-player-wait" class="screen">
+      <h2 id="waitPlayerName">Bem-vindo!</h2>
+      <p class="subtitle">Você está conectado à sala!</p>
+      <div class="pin-display" id="waitPin">0000</div>
+      <p>Olhe para a tela principal (projetor) para acompanhar as jogadas!</p>
+    </div>
+
+    <!-- TELA HOST: LOBBY -->
+    <div id="screen-host-lobby" class="screen">
+      <h2>Sala Criada com Sucesso!</h2>
+      <p class="subtitle">Peça para os alunos entrarem pelo celular usando o PIN:</p>
+      <div class="pin-display" id="hostPinDisplay">----</div>
+
+      <h3>Jogadores Conectados:</h3>
+      <div class="player-list" id="hostPlayerList">Aguardando jogadores...</div>
+
+      <button class="btn-main" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
+    </div>
+
+    <!-- TELA HOST: ROLETA -->
+    <div id="screen-host-wheel" class="screen">
+      <div class="turn-bar">
+        <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
+      </div>
+
+      <h2>Gire a Roleta para Sorteiar os Pontos!</h2>
+
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheelCanvas" width="300" height="300"></canvas>
+      </div>
+
+      <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
+    </div>
+
+    <!-- TELA DE PERGUNTA (TANTO JOGADOR QUANTO HOST) -->
+    <div id="screen-question" class="screen">
+      <div class="turn-bar">
+        <span>Vez de: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
+        <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
+      </div>
+
+      <div class="question-box" id="questionText">Texto da pergunta aqui</div>
+
+      <div class="options-grid">
+        <button class="opt-btn red" onclick="submitAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
+        <button class="opt-btn blue" onclick="submitAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
+        <button class="opt-btn yellow" onclick="submitAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
+        <button class="opt-btn green" onclick="submitAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
+      </div>
+    </div>
+
+    <!-- TELA DE FIM DE JOGO -->
+    <div id="screen-result" class="screen">
+      <h1>🏆 FIM DA PARTIDA! 🏆</h1>
+      <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
+
+      <div class="scoreboard" id="finalScoreboard"></div>
+
+      <button class="btn-main" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
+    </div>
+
+  </div>
+
+  <script>
+    // INICIALIZAÇÃO FIREBASE (Demo Firestore Config)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDemoKeyForSENAIQuizProject2026",
+      authDomain: "tgdq-quiz.firebaseapp.com",
+      projectId: "tgdq-quiz-demo",
+      storageBucket: "tgdq-quiz.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    // DADOS E PERGUNTAS
+    const questions = [
+      {
+        q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?",
+        opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"],
+        correct: 1
+      },
+      {
+        q: "Como tratar células ausentes (dados nulos) antes da análise estatística?",
+        opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"],
+        correct: 1
+      },
+      {
+        q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?",
+        opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"],
+        correct: 1
+      },
+      {
+        q: "O que representa o desvio padrão em um conjunto de dados?",
+        opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"],
+        correct: 1
+      },
+      {
+        q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?",
+        opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"],
+        correct: 0
+      }
+    ];
+
+    const wheelSlices = [100, 200, 500, 1000, 0, 2000];
+    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
+    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA A VEZ', '2.000 Pts!'];
+
+    let currentRoomPin = null;
+    let isHost = false;
+    let myPlayerName = "";
+    let roomUnsubscribe = null;
+    let currentAngle = 0;
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // MODO HOST: CRIAR SALA
+    async function initHost() {
+      isHost = true;
+      currentRoomPin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('hostPinDisplay').innerText = currentRoomPin;
+      showScreen('screen-host-lobby');
+
+      const roomRef = db.collection('rooms').doc(currentRoomPin);
+      await roomRef.set({
+        pin: currentRoomPin,
+        status: 'lobby',
+        players: [],
+        currentPlayerIdx: 0,
+        currentQuestionIdx: 0,
+        currentPointValue: 0
+      });
+
+      // Escutar entrada de jogadores
+      roomUnsubscribe = roomRef.onSnapshot(doc => {
+        const data = doc.data();
+        if(!data) return;
+        renderHostPlayers(data.players || []);
+      });
+    }
+
+    function renderHostPlayers(players) {
+      const list = document.getElementById('hostPlayerList');
+      if(players.length === 0) {
+        list.innerHTML = 'Aguardando jogadores...';
+        return;
+      }
+      list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
+    }
+
+    // MODO JOGADOR: ENTRAR NA SALA
+    async function joinRoom() {
+      const pin = document.getElementById('inputPin').value.trim();
+      const name = document.getElementById('inputPlayerName').value.trim();
+
+      if(!pin || !name) {
+        alert('Preencha o PIN e o seu Nome!');
+        return;
+      }
+
+      currentRoomPin = pin;
+      myPlayerName = name;
+
+      const roomRef = db.collection('rooms').doc(pin);
+      const doc = await roomRef.get();
+
+      if(!doc.exists()) {
+        alert('Sala não encontrada! Verifique o PIN.');
+        return;
+      }
+
+      const data = doc.data();
+      const updatedPlayers = data.players || [];
+      if(!updatedPlayers.some(p => p.name === name)) {
+        updatedPlayers.push({ name: name, score: 0 });
+        await roomRef.update({ players: updatedPlayers });
+      }
+
+      document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+      document.getElementById('waitPin').innerText = pin;
+      showScreen('screen-player-wait');
+
+      // Escutar mudanças de estado do jogo pelo celular
+      roomUnsubscribe = roomRef.onSnapshot(snapshot => {
+        const gameData = snapshot.data();
+        if(!gameData) return;
+
+        if(gameData.status === 'question') {
+          showQuestion(gameData);
+        } else if(gameData.status === 'result') {
+          showResult(gameData);
+        }
+      });
+    }
+
+    // START GAME NO HOST
+    async function startHostGame() {
+      const roomRef = db.collection('rooms').doc(currentRoomPin);
+      const doc = await roomRef.get();
+      const players = doc.data().players || [];
+
+      if(players.length === 0) {
+        alert('Aguarde pelo menos 1 jogador entrar!');
+        return;
+      }
+
+      drawWheel(0);
+      nextHostTurn();
+    }
+
+    async function nextHostTurn() {
+      const roomRef = db.collection('rooms').doc(currentRoomPin);
+      const doc = await roomRef.get();
+      const data = doc.data();
+
+      if(data.currentQuestionIdx >= questions.length) {
+        await roomRef.update({ status: 'result' });
+        showResult(data);
+        return;
+      }
+
+      const currentPlayer = data.players[data.currentPlayerIdx];
+      document.getElementById('wheelPlayerName').innerText = currentPlayer.name;
+      document.getElementById('btnSpin').disabled = false;
+      showScreen('screen-host-wheel');
+    }
+
+    // DESENHAR E GIRAR ROLETA
+    function drawWheel(angleInRad) {
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const radius = canvas.width / 2;
+      const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(angleInRad);
+
+      for (let i = 0; i < wheelSlices.length; i++) {
+        const start = i * sliceAngle;
+        const end = start + sliceAngle;
+
+        ctx.beginPath();
+        ctx.fillStyle = sliceColors[i];
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, start, end);
+        ctx.fill();
+
+        ctx.save();
+        ctx.rotate(start + sliceAngle / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px Montserrat';
+        ctx.textAlign = 'right';
+        ctx.fillText(sliceLabels[i], radius - 15, 5);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function spinWheel() {
+      document.getElementById('btnSpin').disabled = true;
+
+      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
+      const sliceAngleDeg = 360 / wheelSlices.length;
+      const targetAngleDeg = 270 - (selectedIndex * sliceAngleDeg + sliceAngleDeg / 2);
+      const totalRotationDeg = (360 * 5) + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
+      
+      const startAngle = currentAngle;
+      const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
+      const duration = 4000;
+      let startTime = null;
+
+      function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+      function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        currentAngle = startAngle + (targetAngleRad - startAngle) * easeOutCubic(progress);
+        drawWheel(currentAngle);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          const points = wheelSlices[selectedIndex];
+          updateQuestionState(points);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    async function updateQuestionState(points) {
+      const roomRef = db.collection('rooms').doc(currentRoomPin);
+      const doc = await roomRef.get();
+      const data = doc.data();
+
+      if(points === 0) {
+        alert(`Ops! ${data.players[data.currentPlayerIdx].name} caiu no PASSA A VEZ!`);
+        const nextPlayer = (data.currentPlayerIdx + 1) % data.players.length;
+        await roomRef.update({ currentPlayerIdx: nextPlayer });
+        nextHostTurn();
+      } else {
+        await roomRef.update({
+          status: 'question',
+          currentPointValue: points
+        });
+        showQuestion(data);
+      }
+    }
+
+    function showQuestion(data) {
+      const q = questions[data.currentQuestionIdx || 0];
+      const currentPlayer = data.players[data.currentPlayerIdx || 0];
+      
+      document.getElementById('qPlayerName').innerText = currentPlayer.name;
+      document.getElementById('qValue').innerText = `${data.currentPointValue || 100} PTS`;
+      document.getElementById('questionText').innerText = q.q;
+
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`opt${i}`).innerText = q.opts[i];
+      }
+
+      showScreen('screen-question');
+    }
+
+    async function submitAnswer(selectedIndex) {
+      if(!isHost) {
+        alert('Aguarde o jogador do turno responder pelo projetor ou selecione no seu celular!');
+      }
+
+      const roomRef = db.collection('rooms').doc(currentRoomPin);
+      const doc = await roomRef.get();
+      const data = doc.data();
+      const q = questions[data.currentQuestionIdx];
+      const players = data.players;
+      const currentP = players[data.currentPlayerIdx];
+
+      if(selectedIndex === q.correct) {
+        confetti({ particleCount: 100, spread: 70 });
+        currentP.score += data.currentPointValue;
+        alert(`RESPOSTA CERTA! +${data.currentPointValue} Pontos!`);
+      } else {
+        alert(`RESPOSTA INCORRETA! A certa era: ${q.opts[q.correct]}`);
+      }
+
+      const nextQ = data.currentQuestionIdx + 1;
+      const nextP = (data.currentPlayerIdx + 1) % players.length;
+
+      await roomRef.update({
+        players: players,
+        currentQuestionIdx: nextQ,
+        currentPlayerIdx: nextP,
+        status: 'lobby'
+      });
+
+      if(isHost) nextHostTurn();
+    }
+
+    function showResult(data) {
+      confetti({ particleCount: 200, spread: 100 });
+      const sorted = [...(data.players || [])].sort((a,b) => b.score - a.score);
+
+      const board = document.getElementById('finalScoreboard');
+      board.innerHTML = sorted.map((p, idx) => `
+        <div class="score-row">
+          <span>${idx + 1}º ${p.name}</span>
+          <span>${p.score} PTS</span>
+        </div>
+      `).join('');
+
+      showScreen('screen-result');
+    }
+  </script>
+</body>
+</html>
