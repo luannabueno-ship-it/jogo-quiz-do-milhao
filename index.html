@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Show do Milhão TGDQ - Kahoot Multiplayer</title>
+  <title>Quiz TGDQ SENAI - Edição Kahoot Turma Toda</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   
@@ -27,7 +27,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 15px;
     }
 
     .container {
@@ -35,15 +35,13 @@
       max-width: 900px;
       background: var(--card-bg);
       border-radius: 20px;
-      padding: 30px;
+      padding: 25px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
       text-align: center;
-      position: relative;
-      overflow: hidden;
     }
 
-    h1 { font-size: 2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
-    p.subtitle { font-size: 1rem; opacity: 0.9; margin-bottom: 20px; }
+    h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+    p.subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 20px; }
 
     .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
     .screen.active { display: flex; animation: fadeIn 0.4s ease-in-out; }
@@ -57,40 +55,33 @@
       background: var(--yellow);
       color: #000;
       border: none;
-      padding: 15px 30px;
-      font-size: 1.2rem;
+      padding: 15px 35px;
+      font-size: 1.3rem;
       font-weight: 900;
       border-radius: 12px;
       cursor: pointer;
       box-shadow: 0 5px 0 #9e7300;
       margin: 10px;
-      transition: all 0.1s;
+      transition: transform 0.1s;
     }
     .btn-main:active { transform: translateY(4px); box-shadow: none; }
-    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    /* CADASTRO DE ALUNOS */
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 450px;
+    }
     input[type="text"] {
+      flex: 1;
       padding: 14px;
       border-radius: 10px;
       border: none;
       font-size: 1.1rem;
       outline: none;
-      margin-bottom: 15px;
-      width: 100%;
-      max-width: 300px;
-      text-align: center;
       font-weight: bold;
-    }
-
-    .pin-display {
-      font-size: 3rem;
-      font-weight: 900;
-      letter-spacing: 5px;
-      color: var(--yellow);
-      background: rgba(0,0,0,0.3);
-      padding: 10px 30px;
-      border-radius: 15px;
-      margin: 15px 0;
     }
 
     .player-list {
@@ -98,57 +89,42 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin: 20px 0;
+      margin-bottom: 20px;
       width: 100%;
     }
     .player-tag {
       background: rgba(255,255,255,0.2);
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 20px;
       font-weight: bold;
-      font-size: 1.1rem;
     }
 
-    .wheel-container {
-      position: relative;
-      margin: 20px 0;
-    }
-    #wheelCanvas {
+    /* TELA KAHOOT JOGO */
+    .timer-bar {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--yellow);
+      background: rgba(0,0,0,0.3);
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    }
-    .wheel-pointer {
-      position: absolute;
-      top: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0; height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-top: 25px solid white;
-      z-index: 10;
-    }
-
-    .turn-bar {
-      width: 100%;
-      background: rgba(0,0,0,0.2);
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 20px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      border: 4px solid var(--yellow);
     }
 
     .question-box {
       background: white;
       color: #333;
-      padding: 20px;
+      padding: 25px;
       border-radius: 15px;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       font-weight: 700;
       margin-bottom: 20px;
       width: 100%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .options-grid {
@@ -159,31 +135,64 @@
     }
     .opt-btn {
       border: none;
-      padding: 20px;
-      border-radius: 12px;
+      padding: 22px;
+      border-radius: 15px;
       color: white;
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-size: 1.2rem;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 15px;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+      box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+      transition: transform 0.1s;
     }
+    .opt-btn:active { transform: translateY(4px); box-shadow: none; }
     .opt-btn.red { background: var(--red); }
     .opt-btn.blue { background: var(--blue); }
     .opt-btn.yellow { background: var(--yellow); color: #000; }
     .opt-btn.green { background: var(--green); }
 
+    .shape { font-size: 1.8rem; }
+
+    /* CHECKLIST DE VOTAÇÃO */
+    .vote-check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      width: 100%;
+      margin: 20px 0;
+    }
+    .vote-card {
+      background: rgba(255,255,255,0.15);
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      border: 2px solid transparent;
+    }
+    .vote-card.correct {
+      background: var(--green);
+      border-color: #fff;
+    }
+
+    /* PLACAR */
     .scoreboard { width: 100%; margin: 20px 0; }
     .score-row {
       background: rgba(255,255,255,0.1);
-      padding: 12px;
-      border-radius: 8px;
+      padding: 14px 20px;
+      border-radius: 10px;
       margin-bottom: 8px;
       display: flex;
       justify-content: space-between;
+      font-size: 1.2rem;
       font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      .options-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
     }
   </style>
 </head>
@@ -191,86 +200,53 @@
 
   <div class="container">
     
-    <!-- TELA 1: INICIAL -->
-    <div id="screen-welcome" class="screen active">
-      <h1>Quiz do Milhão TGDQ</h1>
-      <p class="subtitle">Multiplayer em Tempo Real (Estilo Kahoot)</p>
+    <!-- TELA 1: CADASTRO DOS ALUNOS DA TURMA -->
+    <div id="screen-setup" class="screen active">
+      <h1>Quiz TGDQ SENAI</h1>
+      <p class="subtitle">Cadastre todos os alunos da sala para jogarem juntos!</p>
       
-      <button class="btn-main" onclick="startHost()">🖥️ CRIAR SALA (PROJETOR)</button>
-      <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (CELULAR)</button>
-      
-      <p style="margin-top: 25px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
-    </div>
-
-    <!-- TELA 2: ENTRAR COM PIN -->
-    <div id="screen-join" class="screen">
-      <h2>Entrar na Partida</h2>
-      <p class="subtitle">Digite o PIN do projetor e o seu nome:</p>
-      
-      <input type="text" id="inputPin" placeholder="PIN da Sala (Ex: 1234)" maxlength="4">
-      <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
-      
-      <button class="btn-main" id="btnJoinAction" onclick="joinGame()">ENTRAR NA SALA 🚀</button>
-      <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
-    </div>
-
-    <!-- TELA 3: AGUARDANDO -->
-    <div id="screen-player-wait" class="screen">
-      <h2 id="waitPlayerName">Conectado!</h2>
-      <p class="subtitle">Você já está dentro do jogo.</p>
-      <div class="pin-display" id="waitPin">0000</div>
-      <p>Acompanhe a roleta na tela principal!</p>
-    </div>
-
-    <!-- TELA 4: LOBBY DO HOST -->
-    <div id="screen-host-lobby" class="screen">
-      <h2>Sala Criada!</h2>
-      <p class="subtitle">Digite este PIN nos celulares para entrar:</p>
-      <div class="pin-display" id="hostPinDisplay">----</div>
-
-      <h3>Jogadores Conectados:</h3>
-      <div class="player-list" id="hostPlayerList">Aguardando jogadores...</div>
-
-      <button class="btn-main" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
-    </div>
-
-    <!-- TELA 5: ROLETA -->
-    <div id="screen-host-wheel" class="screen">
-      <div class="turn-bar">
-        <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
+      <div class="input-group">
+        <input type="text" id="playerName" placeholder="Nome do Aluno..." maxlength="15">
+        <button class="btn-main" style="margin:0; padding:12px 20px;" onclick="addPlayer()">+ Add</button>
       </div>
 
-      <h2>Gire a Roleta para Sortear a Pontuação!</h2>
+      <div class="player-list" id="playerList"></div>
 
-      <div class="wheel-container">
-        <div class="wheel-pointer"></div>
-        <canvas id="wheelCanvas" width="300" height="300"></canvas>
-      </div>
-
-      <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
+      <button class="btn-main" onclick="startGame()">INICIAR PARTIDA 🚀</button>
+      <p style="margin-top: 15px; font-size: 0.85rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA 6: PERGUNTA -->
+    <!-- TELA 2: PERGUNTA ESTILO KAHOOT -->
     <div id="screen-question" class="screen">
-      <div class="turn-bar">
-        <span>Jogador: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
-        <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
-      </div>
-
-      <div class="question-box" id="questionText">Texto da pergunta...</div>
+      <div class="timer-bar" id="timer">20</div>
+      <div class="question-box" id="questionText">Texto da Pergunta</div>
 
       <div class="options-grid">
-        <button class="opt-btn red" onclick="sendAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
-        <button class="opt-btn blue" onclick="sendAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
-        <button class="opt-btn yellow" onclick="sendAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
-        <button class="opt-btn green" onclick="sendAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
+        <div class="opt-btn red"><span class="shape">▲</span> <span id="opt0">Opção 1</span></div>
+        <div class="opt-btn blue"><span class="shape">◆</span> <span id="opt1">Opção 2</span></div>
+        <div class="opt-btn yellow"><span class="shape">●</span> <span id="opt2">Opção 3</span></div>
+        <div class="opt-btn green"><span class="shape">■</span> <span id="opt3">Opção 4</span></div>
       </div>
     </div>
 
-    <!-- TELA 7: FIM DE JOGO -->
+    <!-- TELA 3: REGISTRO DE ACERTOS -->
+    <div id="screen-scoring" class="screen">
+      <h2>Tempo Esgotado! ⏱️</h2>
+      <p class="subtitle">Clique nos alunos que **ACERTARAM** a resposta correta:</p>
+      <h3 style="color: var(--yellow); margin-bottom: 10px;" id="correctAnswerText"></h3>
+
+      <div class="vote-check-grid" id="voteCheckGrid"></div>
+
+      <button class="btn-main" onclick="confirmScores()">CONFIRMAR PONTOS ➔</button>
+    </div>
+
+    <!-- TELA 4: PODIUM FINAL -->
     <div id="screen-result" class="screen">
-      <h1>🏆 FIM DA PARTIDA! 🏆</h1>
+      <h1>🏆 RANKING FINAL SENAI 🏆</h1>
+      <p class="subtitle">Parabéns aos vencedores da turma!</p>
+
       <div class="scoreboard" id="finalScoreboard"></div>
+
       <button class="btn-main" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
     </div>
 
@@ -278,242 +254,144 @@
 
   <script>
     const questions = [
-      { q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?", opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"], correct: 1 },
-      { q: "Como tratar células ausentes (dados nulos) antes da análise estatística?", opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"], correct: 1 },
-      { q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?", opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"], correct: 1 },
-      { q: "O que representa o desvio padrão em um conjunto de dados?", opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"], correct: 1 },
-      { q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?", opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"], correct: 0 }
+      {
+        q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?",
+        opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"],
+        correct: 1
+      },
+      {
+        q: "Como tratar células ausentes (dados nulos) antes da análise estatística?",
+        opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"],
+        correct: 1
+      },
+      {
+        q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?",
+        opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"],
+        correct: 1
+      },
+      {
+        q: "O que representa o desvio padrão em um conjunto de dados?",
+        opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"],
+        correct: 1
+      },
+      {
+        q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?",
+        opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"],
+        correct: 0
+      }
     ];
 
-    const wheelSlices = [100, 200, 500, 1000, 0, 2000];
-    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
-    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
-
-    let isHost = false;
-    let roomPin = "";
-    let myPlayerName = "";
     let players = [];
-    let currentPlayerIdx = 0;
     let currentQuestionIdx = 0;
-    let currentPointValue = 0;
-    let currentAngle = 0;
-
-    // Canal de Comunicação em Tempo Real do Navegador (BroadcastChannel)
-    let channel = null;
+    let timerInterval = null;
+    let timeLeft = 20;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    function initChannel(pin) {
-      channel = new BroadcastChannel('tgdq_room_' + pin);
-      channel.onmessage = (event) => {
-        handleMessage(event.data);
-      };
-    }
-
-    // MODO HOST
-    function startHost() {
-      isHost = true;
-      roomPin = Math.floor(1000 + Math.random() * 9000).toString();
-      document.getElementById('hostPinDisplay').innerText = roomPin;
-      showScreen('screen-host-lobby');
-
-      initChannel(roomPin);
-    }
-
-    // MODO JOGADOR (BOTÃO DE ENTRAR CORRIGIDO E DIRETO)
-    function joinGame() {
-      const pin = document.getElementById('inputPin').value.trim();
-      const name = document.getElementById('inputPlayerName').value.trim();
-
-      if(!pin || !name) {
-        alert('Por favor, preencha o PIN da sala e o seu Nome!');
-        return;
-      }
-
-      roomPin = pin;
-      myPlayerName = name;
-
-      initChannel(roomPin);
-
-      // Envia mensagem de entrada imediatamente
-      channel.postMessage({ type: 'JOIN', name: name });
-
-      document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
-      document.getElementById('waitPin').innerText = roomPin;
-      showScreen('screen-player-wait');
-    }
-
-    function handleMessage(data) {
-      if(isHost) {
-        if(data.type === 'JOIN') {
-          if(!players.some(p => p.name === data.name)) {
-            players.push({ name: data.name, score: 0 });
-            updateHostPlayerList();
-          }
-        } else if(data.type === 'ANSWER') {
-          processAnswer(data.optionIndex);
-        }
-      } else {
-        if(data.type === 'SHOW_QUESTION') {
-          renderQuestion(data.question, data.playerName, data.points);
-        } else if(data.type === 'GAME_OVER') {
-          renderResult(data.players);
-        }
+    function addPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim();
+      if(name && !players.some(p => p.name === name)) {
+        players.push({ name: name, score: 0, hitThisRound: false });
+        input.value = '';
+        renderPlayers();
       }
     }
 
-    function updateHostPlayerList() {
-      const list = document.getElementById('hostPlayerList');
+    function renderPlayers() {
+      const list = document.getElementById('playerList');
       list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
-    function startHostGame() {
+    function startGame() {
       if(players.length === 0) {
-        alert('Aguarde pelo menos 1 jogador se conectar!');
+        alert('Adicione pelo menos 1 aluno para iniciar!');
         return;
       }
-      drawWheel(0);
-      nextTurnHost();
+      loadQuestion();
     }
 
-    function nextTurnHost() {
+    function loadQuestion() {
       if(currentQuestionIdx >= questions.length) {
-        channel.postMessage({ type: 'GAME_OVER', players: players });
-        renderResult(players);
+        showFinalResult();
         return;
       }
-      document.getElementById('wheelPlayerName').innerText = players[currentPlayerIdx].name;
-      document.getElementById('btnSpin').disabled = false;
-      showScreen('screen-host-wheel');
-    }
 
-    function drawWheel(angle) {
-      const canvas = document.getElementById('wheelCanvas');
-      const ctx = canvas.getContext('2d');
-      const radius = canvas.width / 2;
-      const sliceAngle = (2 * Math.PI) / wheelSlices.length;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      ctx.translate(radius, radius);
-      ctx.rotate(angle);
-
-      for (let i = 0; i < wheelSlices.length; i++) {
-        ctx.beginPath();
-        ctx.fillStyle = sliceColors[i];
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
-        ctx.fill();
-
-        ctx.save();
-        ctx.rotate(i * sliceAngle + sliceAngle / 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px Montserrat';
-        ctx.textAlign = 'right';
-        ctx.fillText(sliceLabels[i], radius - 15, 5);
-        ctx.restore();
-      }
-      ctx.restore();
-    }
-
-    function spinWheel() {
-      document.getElementById('btnSpin').disabled = true;
-
-      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
-      const sliceAngleDeg = 360 / wheelSlices.length;
-      const targetAngleDeg = 270 - (selectedIndex * sliceAngleDeg + sliceAngleDeg / 2);
-      const totalRotationDeg = (360 * 5) + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
-      
-      const startAngle = currentAngle;
-      const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
-      const duration = 4000;
-      let startTime = null;
-
-      function animate(timestamp) {
-        if (!startTime) startTime = timestamp;
-        const progress = Math.min((timestamp - startTime) / duration, 1);
-        currentAngle = startAngle + (targetAngleRad - startAngle) * (1 - Math.pow(1 - progress, 3));
-        drawWheel(currentAngle);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          currentPointValue = wheelSlices[selectedIndex];
-          if (currentPointValue === 0) {
-            alert(`PASSA A VEZ para ${players[currentPlayerIdx].name}!`);
-            currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-            nextTurnHost();
-          } else {
-            sendQuestionToAll();
-          }
-        }
-      }
-      requestAnimationFrame(animate);
-    }
-
-    function sendQuestionToAll() {
       const q = questions[currentQuestionIdx];
-      const pName = players[currentPlayerIdx].name;
-
-      channel.postMessage({
-        type: 'SHOW_QUESTION',
-        question: q,
-        playerName: pName,
-        points: currentPointValue
-      });
-
-      renderQuestion(q, pName, currentPointValue);
-    }
-
-    function renderQuestion(q, playerName, points) {
-      document.getElementById('qPlayerName').innerText = playerName;
-      document.getElementById('qValue').innerText = `${points} PTS`;
       document.getElementById('questionText').innerText = q.q;
-
-      for (let i = 0; i < 4; i++) {
+      for(let i = 0; i < 4; i++) {
         document.getElementById(`opt${i}`).innerText = q.opts[i];
       }
+
       showScreen('screen-question');
+
+      timeLeft = 20;
+      document.getElementById('timer').innerText = timeLeft;
+      
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if(timeLeft <= 0) {
+          clearInterval(timerInterval);
+          openScoringScreen();
+        }
+      }, 1000);
     }
 
-    function sendAnswer(optionIndex) {
-      if(isHost) {
-        processAnswer(optionIndex);
-      } else {
-        channel.postMessage({ type: 'ANSWER', optionIndex: optionIndex });
-      }
-    }
-
-    function processAnswer(optionIndex) {
-      if(!isHost) return;
-
+    function openScoringScreen() {
       const q = questions[currentQuestionIdx];
-      if(optionIndex === q.correct) {
-        confetti({ particleCount: 100, spread: 70 });
-        players[currentPlayerIdx].score += currentPointValue;
-        alert(`ACERTOU! +${currentPointValue} Pontos!`);
-      } else {
-        alert(`ERROU! A alternativa correta era: ${q.opts[q.correct]}`);
-      }
+      document.getElementById('correctAnswerText').innerText = `Resposta Certa: ${q.opts[q.correct]}`;
 
-      currentQuestionIdx++;
-      currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-      nextTurnHost();
+      players.forEach(p => p.hitThisRound = false);
+
+      const grid = document.getElementById('voteCheckGrid');
+      grid.innerHTML = players.map((p, idx) => `
+        <div class="vote-card" id="p-card-${idx}" onclick="toggleHit(${idx})">
+          👤 ${p.name}
+        </div>
+      `).join('');
+
+      showScreen('screen-scoring');
     }
 
-    function renderResult(pList) {
+    function toggleHit(idx) {
+      players[idx].hitThisRound = !players[idx].hitThisRound;
+      const card = document.getElementById(`p-card-${idx}`);
+      if(players[idx].hitThisRound) {
+        card.classList.add('correct');
+      } else {
+        card.classList.remove('correct');
+      }
+    }
+
+    function confirmScores() {
+      players.forEach(p => {
+        if(p.hitThisRound) {
+          p.score += 1000;
+        }
+      });
+
+      confetti({ particleCount: 70, spread: 60 });
+      currentQuestionIdx++;
+      loadQuestion();
+    }
+
+    function showFinalResult() {
       confetti({ particleCount: 200, spread: 100 });
-      const sorted = [...pList].sort((a,b) => b.score - a.score);
+      players.sort((a, b) => b.score - a.score);
+
       const board = document.getElementById('finalScoreboard');
-      board.innerHTML = sorted.map((p, idx) => `
+      board.innerHTML = players.map((p, idx) => `
         <div class="score-row">
           <span>${idx + 1}º ${p.name}</span>
           <span>${p.score} PTS</span>
         </div>
       `).join('');
+
       showScreen('screen-result');
     }
   </script>
