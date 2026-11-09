@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz TGDQ SENAI - Kahoot Realtime</title>
+  <title>Quiz TGDQ SENAI - Todos Jogam Juntos</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Servidor MQTT sobre WebSockets de Alta Conectividade Livre -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   
   <style>
@@ -196,10 +195,10 @@
 
   <div class="container">
     
-    <!-- TELA 1: MODALIDADE INICIAL -->
+    <!-- TELA INICIAL -->
     <div id="screen-welcome" class="screen active">
       <h1>Quiz TGDQ SENAI</h1>
-      <p class="subtitle">Multiplayer em Tempo Real para Vários Dispositivos</p>
+      <p class="subtitle">Multiplayer Geral (Estilo Kahoot)</p>
       
       <button class="btn-main" onclick="initHost()">🖥️ CRIAR SALA (PROJETOR / HOST)</button>
       <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (CELULAR)</button>
@@ -207,7 +206,7 @@
       <p style="margin-top: 25px; font-size: 0.85rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA 2: ALUNO DIGITA PIN (CELULAR) -->
+    <!-- TELA JOGADOR: ENTRAR COM PIN -->
     <div id="screen-join" class="screen">
       <h2>Entrar no Jogo</h2>
       <p class="subtitle">Digite o PIN do projetor e o seu nome:</p>
@@ -219,18 +218,18 @@
       <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
     </div>
 
-    <!-- TELA 3: AGUARDANDO NO CELULAR -->
+    <!-- TELA JOGADOR: AGUARDANDO PROJETOR -->
     <div id="screen-player-wait" class="screen">
       <h2 id="waitPlayerName">Conectado!</h2>
-      <p class="subtitle">Você está na partida. Aguarde o Host começar!</p>
+      <p class="subtitle">Você está pronto para responder!</p>
       <div class="pin-display" id="waitPin">0000</div>
-      <p>Acompanhe a tela do projetor!</p>
+      <p id="waitStatusText">Olhe para o projetor para acompanhar a roleta!</p>
     </div>
 
-    <!-- TELA 4: LOBBY NO PROJETOR (HOST) -->
+    <!-- TELA HOST: LOBBY -->
     <div id="screen-host-lobby" class="screen">
-      <h2>Sala Aberta!</h2>
-      <p class="subtitle">Insira este PIN nos celulares dos alunos:</p>
+      <h2>Sala Criada!</h2>
+      <p class="subtitle">Alunos entram pelo celular digitando este PIN:</p>
       <div class="pin-display" id="hostPinDisplay">----</div>
 
       <h3>Alunos Conectados:</h3>
@@ -239,13 +238,9 @@
       <button class="btn-main" id="btnStartGame" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
     </div>
 
-    <!-- TELA 5: ROLETA NO PROJETOR -->
+    <!-- TELA HOST: ROLETA -->
     <div id="screen-host-wheel" class="screen">
-      <div class="turn-bar">
-        <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
-      </div>
-
-      <h2>Gire a Roleta para Definir a Pontuação!</h2>
+      <h2>Gire a Roleta para Definir os Pontos desta Pergunta!</h2>
 
       <div class="wheel-container">
         <div class="wheel-pointer"></div>
@@ -255,27 +250,31 @@
       <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
     </div>
 
-    <!-- TELA 6: PERGUNTA (PROJETOR E CELULAR) -->
+    <!-- TELA DE PERGUNTA (PROJETOR E CELULAR) -->
     <div id="screen-question" class="screen">
       <div class="turn-bar">
-        <span>Vez de: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
+        <span>TODOS RESPONDEM</span>
         <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
       </div>
 
       <div class="question-box" id="questionText">Carregando pergunta...</div>
 
-      <div class="options-grid">
+      <div class="options-grid" id="optionsContainer">
         <button class="opt-btn red" onclick="submitAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
         <button class="opt-btn blue" onclick="submitAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
         <button class="opt-btn yellow" onclick="submitAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
         <button class="opt-btn green" onclick="submitAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
       </div>
+
+      <div id="hostControls" style="display: none; margin-top: 20px;">
+        <button class="btn-main" onclick="finishQuestionRound()">FINALIZAR PERGUNTA ➔</button>
+      </div>
     </div>
 
-    <!-- TELA 7: RANKING FINAL -->
+    <!-- TELA DE RANKING FINAL -->
     <div id="screen-result" class="screen">
-      <h1>🏆 FIM DA PARTIDA! 🏆</h1>
-      <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
+      <h1>🏆 RANKING FINAL SENAI 🏆</h1>
+      <p class="subtitle">Quem teve mais pontos ganha!</p>
 
       <div class="scoreboard" id="finalScoreboard"></div>
 
@@ -293,19 +292,19 @@
       { q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?", opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"], correct: 0 }
     ];
 
-    const wheelSlices = [100, 200, 500, 1000, 0, 2000];
-    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
-    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
+    const wheelSlices = [100, 200, 500, 1000, 1500, 2000];
+    const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#e67e22', '#9c27b0'];
+    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', '1.500 Pts', '2.000 Pts!'];
 
     let client = null;
     let isHost = false;
     let roomPin = "";
     let myPlayerName = "";
-    let players = [];
-    let currentPlayerIdx = 0;
+    let players = []; // [{name, score, answered, selectedOpt}]
     let currentQuestionIdx = 0;
     let currentPointValue = 0;
     let currentAngle = 0;
+    let hasAnsweredCurrentQuestion = false;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -313,7 +312,6 @@
     }
 
     function connectBroker(onConnected) {
-      // Conexão direta ao broker público EMQX via WebSockets
       client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
         clientId: 'tgdq_' + Math.random().toString(16).substr(2, 8),
         keepalive: 60
@@ -337,11 +335,12 @@
       }
     }
 
-    // INICIALIZAÇÃO DO HOST
+    // INICIALIZAÇÃO DO HOST (PROJETOR)
     function initHost() {
       isHost = true;
       roomPin = Math.floor(1000 + Math.random() * 9000).toString();
       document.getElementById('hostPinDisplay').innerText = roomPin;
+      document.getElementById('hostControls').style.display = 'block';
       showScreen('screen-host-lobby');
 
       connectBroker(() => {
@@ -385,15 +384,23 @@
       if (isHost) {
         if (msg.type === 'JOIN') {
           if (!players.some(p => p.name === msg.name)) {
-            players.push({ name: msg.name, score: 0 });
+            players.push({ name: msg.name, score: 0, answered: false, selectedOpt: -1 });
             updateHostPlayerList();
           }
         } else if (msg.type === 'SUBMIT_ANSWER') {
-          processAnswer(msg.optionIndex);
+          const player = players.find(p => p.name === msg.playerName);
+          if (player) {
+            player.answered = true;
+            player.selectedOpt = msg.optionIndex;
+          }
         }
       } else {
         if (msg.type === 'SHOW_QUESTION') {
-          renderQuestion(msg.question, msg.playerName, msg.points);
+          hasAnsweredCurrentQuestion = false;
+          renderQuestion(msg.question, msg.points);
+        } else if (msg.type === 'WAIT_ROUND') {
+          document.getElementById('waitStatusText').innerText = "Resposta enviada! Aguarde os outros jogadores.";
+          showScreen('screen-player-wait');
         } else if (msg.type === 'GAME_OVER') {
           renderResult(msg.players);
         }
@@ -406,17 +413,6 @@
         return;
       }
       drawWheel(0);
-      nextHostTurn();
-    }
-
-    function nextHostTurn() {
-      if (currentQuestionIdx >= questions.length) {
-        publishMsg({ type: 'GAME_OVER', players: players });
-        renderResult(players);
-        return;
-      }
-      document.getElementById('wheelPlayerName').innerText = players[currentPlayerIdx].name;
-      document.getElementById('btnSpin').disabled = false;
       showScreen('screen-host-wheel');
     }
 
@@ -459,7 +455,7 @@
       
       const startAngle = currentAngle;
       const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
-      const duration = 4000;
+      const duration = 3500;
       let startTime = null;
 
       function animate(timestamp) {
@@ -472,13 +468,8 @@
           requestAnimationFrame(animate);
         } else {
           currentPointValue = wheelSlices[selectedIndex];
-          if (currentPointValue === 0) {
-            alert(`PASSA A VEZ para ${players[currentPlayerIdx].name}!`);
-            currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-            nextHostTurn();
-          } else {
-            sendQuestionToAll();
-          }
+          document.getElementById('btnSpin').disabled = false;
+          sendQuestionToAll();
         }
       }
       requestAnimationFrame(animate);
@@ -486,21 +477,20 @@
 
     function sendQuestionToAll() {
       const q = questions[currentQuestionIdx];
-      const pName = players[currentPlayerIdx].name;
+      
+      // Reseta respostas da rodada
+      players.forEach(p => { p.answered = false; p.selectedOpt = -1; });
 
-      const payload = {
+      publishMsg({
         type: 'SHOW_QUESTION',
         question: q,
-        playerName: pName,
         points: currentPointValue
-      };
+      });
 
-      publishMsg(payload);
-      renderQuestion(q, pName, currentPointValue);
+      renderQuestion(q, currentPointValue);
     }
 
-    function renderQuestion(q, playerName, points) {
-      document.getElementById('qPlayerName').innerText = playerName;
+    function renderQuestion(q, points) {
       document.getElementById('qValue').innerText = `${points} PTS`;
       document.getElementById('questionText').innerText = q.q;
 
@@ -511,28 +501,39 @@
     }
 
     function submitAnswer(optionIndex) {
-      if (isHost) {
-        processAnswer(optionIndex);
-      } else {
-        publishMsg({ type: 'SUBMIT_ANSWER', optionIndex: optionIndex });
+      if (hasAnsweredCurrentQuestion) return;
+      hasAnsweredCurrentQuestion = true;
+
+      if (!isHost) {
+        publishMsg({ type: 'SUBMIT_ANSWER', playerName: myPlayerName, optionIndex: optionIndex });
+        document.getElementById('waitStatusText').innerText = "Resposta gravada! Aguarde a finalização da rodada.";
+        showScreen('screen-player-wait');
       }
     }
 
-    function processAnswer(optionIndex) {
+    function finishQuestionRound() {
       if (!isHost) return;
 
       const q = questions[currentQuestionIdx];
-      if (optionIndex === q.correct) {
-        confetti({ particleCount: 100, spread: 70 });
-        players[currentPlayerIdx].score += currentPointValue;
-        alert(`RESPOSTA CERTA! +${currentPointValue} Pontos!`);
-      } else {
-        alert(`RESPOSTA INCORRETA! A certa era: ${q.opts[q.correct]}`);
-      }
+
+      // Computa pontuação de quem acertou
+      players.forEach(p => {
+        if (p.selectedOpt === q.correct) {
+          p.score += currentPointValue;
+        }
+      });
+
+      confetti({ particleCount: 100, spread: 70 });
+      alert(`Rodada finalizada! Resposta correta: ${q.opts[q.correct]}`);
 
       currentQuestionIdx++;
-      currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-      nextHostTurn();
+
+      if (currentQuestionIdx >= questions.length) {
+        publishMsg({ type: 'GAME_OVER', players: players });
+        renderResult(players);
+      } else {
+        showScreen('screen-host-wheel');
+      }
     }
 
     function renderResult(pList) {
