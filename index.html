@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Show do Milhão TGDQ - Kahoot Multiplayer Realtime</title>
+  <title>Show do Milhão TGDQ - Kahoot Multiplayer</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Conectividade Global Livre (MQTT via WebSockets) -->
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- PeerJS Conexão Realtime Gratuita -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   
   <style>
     :root {
@@ -71,7 +71,7 @@
     .btn-main:active { transform: translateY(4px); box-shadow: none; }
     .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    input[type="text"], input[type="number"] {
+    input[type="text"] {
       padding: 14px;
       border-radius: 10px;
       border: none;
@@ -193,56 +193,56 @@
 
   <div class="container">
     
-    <!-- TELA INICIAL -->
+    <!-- TELA 1: SELEÇÃO DE MODO -->
     <div id="screen-welcome" class="screen active">
       <h1>Quiz do Milhão TGDQ</h1>
-      <p class="subtitle">Multiplayer Sincronizado para Vários Dispositivos</p>
+      <p class="subtitle">Multiplayer em Tempo Real (Estilo Kahoot)</p>
       
-      <button class="btn-main" onclick="initHost()">🖥️ CRIAR SALA (PROJETOR / HOST)</button>
+      <button class="btn-main" onclick="startHost()">🖥️ CRIAR SALA (PROJETOR)</button>
       <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (CELULAR)</button>
       
       <p style="margin-top: 25px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA JOGADOR: ENTRAR COM PIN -->
+    <!-- TELA 2: ENTRAR COM PIN (CELULAR) -->
     <div id="screen-join" class="screen">
-      <h2>Entrar no Jogo</h2>
-      <p class="subtitle">Insira o PIN exibido no projetor e o seu nome:</p>
+      <h2>Entrar na Partida</h2>
+      <p class="subtitle">Digite o PIN mostrado no projetor e o seu nome:</p>
       
-      <input type="number" id="inputPin" placeholder="PIN da Sala (4 dígitos)">
+      <input type="text" id="inputPin" placeholder="PIN da Sala (Ex: 4821)" maxlength="4">
       <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
       
-      <button class="btn-main" onclick="joinRoom()">ENTRAR NA SALA 🚀</button>
+      <button class="btn-main" onclick="joinGame()">ENTRAR NA SALA 🚀</button>
       <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
     </div>
 
-    <!-- TELA JOGADOR: AGUARDANDO -->
+    <!-- TELA 3: AGUARDANDO NO CELULAR -->
     <div id="screen-player-wait" class="screen">
-      <h2 id="waitPlayerName">Bem-vindo!</h2>
-      <p class="subtitle">Você está conectado à sala!</p>
+      <h2 id="waitPlayerName">Conectado!</h2>
+      <p class="subtitle">Você já está dentro do jogo.</p>
       <div class="pin-display" id="waitPin">0000</div>
-      <p>Acompanhe a roleta e a rodada na tela principal!</p>
+      <p>Olhe para o projetor para acompanhar a roleta!</p>
     </div>
 
-    <!-- TELA HOST: LOBBY -->
+    <!-- TELA 4: LOBBY DO PROJETOR (HOST) -->
     <div id="screen-host-lobby" class="screen">
-      <h2>Sala Aberta!</h2>
-      <p class="subtitle">Alunos entram pelo celular digitando o PIN:</p>
+      <h2>Sala Criada com Sucesso!</h2>
+      <p class="subtitle">Digite este PIN nos celulares para conectar:</p>
       <div class="pin-display" id="hostPinDisplay">----</div>
 
       <h3>Jogadores Conectados:</h3>
-      <div class="player-list" id="hostPlayerList">Aguardando conexões...</div>
+      <div class="player-list" id="hostPlayerList">Aguardando jogadores entrarem...</div>
 
       <button class="btn-main" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
     </div>
 
-    <!-- TELA HOST: ROLETA -->
+    <!-- TELA 5: ROLETA (PROJETOR) -->
     <div id="screen-host-wheel" class="screen">
       <div class="turn-bar">
         <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
       </div>
 
-      <h2>Gire a Roleta para Sortear a Pontuação!</h2>
+      <h2>Gire a Roleta para Definir os Pontos!</h2>
 
       <div class="wheel-container">
         <div class="wheel-pointer"></div>
@@ -252,24 +252,24 @@
       <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
     </div>
 
-    <!-- TELA DE PERGUNTA -->
+    <!-- TELA 6: PERGUNTA -->
     <div id="screen-question" class="screen">
       <div class="turn-bar">
-        <span>Vez de: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
+        <span>Jogador: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
         <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
       </div>
 
-      <div class="question-box" id="questionText">Carregando pergunta...</div>
+      <div class="question-box" id="questionText">Texto da pergunta...</div>
 
       <div class="options-grid">
-        <button class="opt-btn red" onclick="submitAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
-        <button class="opt-btn blue" onclick="submitAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
-        <button class="opt-btn yellow" onclick="submitAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
-        <button class="opt-btn green" onclick="submitAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
+        <button class="opt-btn red" onclick="sendAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
+        <button class="opt-btn blue" onclick="sendAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
+        <button class="opt-btn yellow" onclick="sendAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
+        <button class="opt-btn green" onclick="sendAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
       </div>
     </div>
 
-    <!-- TELA DE FIM DE JOGO -->
+    <!-- TELA 7: PLACAR FINAL -->
     <div id="screen-result" class="screen">
       <h1>🏆 FIM DA PARTIDA! 🏆</h1>
       <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
@@ -294,10 +294,10 @@
     const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
     const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
 
-    let client = null;
-    let roomPin = "";
+    let peer = null;
+    let conn = null;
+    let connections = [];
     let isHost = false;
-    let myPlayerName = "";
     let players = [];
     let currentPlayerIdx = 0;
     let currentQuestionIdx = 0;
@@ -309,80 +309,32 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // CONECTAR AO SERVIDOR MQTT PÚBLICO
-    function connectBroker(onConnected) {
-      client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
-      client.on('connect', () => {
-        onConnected();
-      });
-      client.on('message', (topic, payload) => {
-        const msg = JSON.parse(payload.toString());
-        handleMessage(msg);
-      });
-    }
-
-    // MODO HOST (PROJETOR)
-    function initHost() {
+    // LÓGICA DO HOST (PROJETOR)
+    function startHost() {
       isHost = true;
-      roomPin = Math.floor(1000 + Math.random() * 9000).toString();
-      document.getElementById('hostPinDisplay').innerText = roomPin;
+      const pin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('hostPinDisplay').innerText = pin;
       showScreen('screen-host-lobby');
 
-      connectBroker(() => {
-        client.subscribe(`tgdq/room/${roomPin}`);
-      });
-    }
+      // Inicializa o PeerJS com ID prefixado pelo PIN
+      peer = new Peer('senai-tgdq-pin-' + pin);
 
-    // MODO JOGADOR (CELULAR)
-    function joinRoom() {
-      const pin = document.getElementById('inputPin').value.trim();
-      const name = document.getElementById('inputPlayerName').value.trim();
+      peer.on('connection', (c) => {
+        connections.push(c);
 
-      if (!pin || !name) {
-        alert('Preencha o PIN e seu Nome!');
-        return;
-      }
-
-      roomPin = pin;
-      myPlayerName = name;
-
-      connectBroker(() => {
-        client.subscribe(`tgdq/room/${roomPin}`);
-        // Notifica o host sobre a entrada
-        publishMsg({ type: 'JOIN', name: name });
-        
-        document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
-        document.getElementById('waitPin').innerText = roomPin;
-        showScreen('screen-player-wait');
-      });
-    }
-
-    function publishMsg(msg) {
-      if (client) {
-        client.publish(`tgdq/room/${roomPin}`, JSON.stringify(msg));
-      }
-    }
-
-    // RECEBER MENSAGENS EM TEMPO REAL
-    function handleMessage(msg) {
-      if (isHost) {
-        if (msg.type === 'JOIN') {
-          if (!players.some(p => p.name === msg.name)) {
-            players.push({ name: msg.name, score: 0 });
+        c.on('data', (data) => {
+          if(data.type === 'JOIN') {
+            players.push({ id: c.peer, name: data.name, score: 0 });
             updateHostPlayerList();
-            publishMsg({ type: 'PLAYER_LIST', players: players });
+          } else if(data.type === 'ANSWER') {
+            processAnswer(data.optionIndex);
           }
-        } else if (msg.type === 'SUBMIT_ANSWER') {
-          processAnswer(msg.optionIndex);
-        }
-      } else {
-        // Lógica do Jogador
-        if (msg.type === 'SHOW_QUESTION') {
-          renderQuestion(msg);
-        } else if (msg.type === 'GAME_OVER') {
-          renderResult(msg.players);
-        }
-      }
+        });
+      });
+
+      peer.on('error', (err) => {
+        alert('Erro ao criar sala. Tente clicar em "CRIAR SALA" novamente.');
+      });
     }
 
     function updateHostPlayerList() {
@@ -390,18 +342,54 @@
       list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
+    // LÓGICA DO JOGADOR (CELULAR)
+    function joinGame() {
+      const pin = document.getElementById('inputPin').value.trim();
+      const name = document.getElementById('inputPlayerName').value.trim();
+
+      if(!pin || !name) {
+        alert('Preencha o PIN e seu Nome!');
+        return;
+      }
+
+      peer = new Peer();
+
+      peer.on('open', () => {
+        conn = peer.connect('senai-tgdq-pin-' + pin);
+
+        conn.on('open', () => {
+          conn.send({ type: 'JOIN', name: name });
+          document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+          document.getElementById('waitPin').innerText = pin;
+          showScreen('screen-player-wait');
+        });
+
+        conn.on('data', (data) => {
+          if(data.type === 'SHOW_QUESTION') {
+            renderQuestion(data.question, data.playerName, data.points);
+          } else if(data.type === 'GAME_OVER') {
+            renderResult(data.players);
+          }
+        });
+      });
+
+      peer.on('error', () => {
+        alert('Não foi possível conectar à sala. Verifique se o PIN está correto!');
+      });
+    }
+
     function startHostGame() {
-      if (players.length === 0) {
+      if(players.length === 0) {
         alert('Aguarde pelo menos 1 jogador se conectar!');
         return;
       }
       drawWheel(0);
-      nextHostTurn();
+      nextTurnHost();
     }
 
-    function nextHostTurn() {
-      if (currentQuestionIdx >= questions.length) {
-        publishMsg({ type: 'GAME_OVER', players: players });
+    function nextTurnHost() {
+      if(currentQuestionIdx >= questions.length) {
+        broadcast({ type: 'GAME_OVER', players: players });
         renderResult(players);
         return;
       }
@@ -465,54 +453,67 @@
           if (currentPointValue === 0) {
             alert(`PASSA A VEZ para ${players[currentPlayerIdx].name}!`);
             currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-            nextHostTurn();
+            nextTurnHost();
           } else {
-            const qData = {
-              type: 'SHOW_QUESTION',
-              question: questions[currentQuestionIdx],
-              playerName: players[currentPlayerIdx].name,
-              points: currentPointValue
-            };
-            publishMsg(qData);
-            renderQuestion(qData);
+            sendQuestionToAll();
           }
         }
       }
       requestAnimationFrame(animate);
     }
 
-    function renderQuestion(data) {
-      document.getElementById('qPlayerName').innerText = data.playerName;
-      document.getElementById('qValue').innerText = `${data.points} PTS`;
-      document.getElementById('questionText').innerText = data.question.q;
+    function sendQuestionToAll() {
+      const q = questions[currentQuestionIdx];
+      const pName = players[currentPlayerIdx].name;
+
+      broadcast({
+        type: 'SHOW_QUESTION',
+        question: q,
+        playerName: pName,
+        points: currentPointValue
+      });
+
+      renderQuestion(q, pName, currentPointValue);
+    }
+
+    function renderQuestion(q, playerName, points) {
+      document.getElementById('qPlayerName').innerText = playerName;
+      document.getElementById('qValue').innerText = `${points} PTS`;
+      document.getElementById('questionText').innerText = q.q;
 
       for (let i = 0; i < 4; i++) {
-        document.getElementById(`opt${i}`).innerText = data.question.opts[i];
+        document.getElementById(`opt${i}`).innerText = q.opts[i];
       }
       showScreen('screen-question');
     }
 
-    function submitAnswer(optionIndex) {
-      if (isHost) {
+    function sendAnswer(optionIndex) {
+      if(isHost) {
         processAnswer(optionIndex);
-      } else {
-        publishMsg({ type: 'SUBMIT_ANSWER', optionIndex: optionIndex });
+      } else if(conn) {
+        conn.send({ type: 'ANSWER', optionIndex: optionIndex });
       }
     }
 
     function processAnswer(optionIndex) {
+      if(!isHost) return;
+
       const q = questions[currentQuestionIdx];
-      if (optionIndex === q.correct) {
+      if(optionIndex === q.correct) {
         confetti({ particleCount: 100, spread: 70 });
         players[currentPlayerIdx].score += currentPointValue;
-        alert(`RESPOSTA CERTA! +${currentPointValue} Pontos!`);
+        alert(`ACERTOU! +${currentPointValue} Pontos!`);
       } else {
-        alert(`RESPOSTA INCORRETA! A resposta certa era: ${q.opts[q.correct]}`);
+        alert(`ERROU! A alternativa correta era: ${q.opts[q.correct]}`);
       }
 
       currentQuestionIdx++;
       currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-      nextHostTurn();
+      nextTurnHost();
+    }
+
+    function broadcast(data) {
+      connections.forEach(c => c.send(data));
     }
 
     function renderResult(pList) {
