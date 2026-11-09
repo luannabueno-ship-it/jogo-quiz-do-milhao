@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Show do Milhão TGDQ - Edição Kahoot & Roleta</title>
+  <title>Show do Milhão TGDQ - Multiplayer P2P</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- PeerJS para conexão direta entre aparelhos sem banco de dados -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   
   <style>
     :root {
@@ -42,10 +44,9 @@
       overflow: hidden;
     }
 
-    h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
-    p.subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 20px; }
+    h1 { font-size: 2rem; font-weight: 900; margin-bottom: 10px; text-transform: uppercase; }
+    p.subtitle { font-size: 1rem; opacity: 0.9; margin-bottom: 20px; }
 
-    /* TELAS */
     .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
     .screen.active { display: flex; animation: fadeIn 0.4s ease-in-out; }
 
@@ -54,30 +55,44 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* INPUT DE JOGADORES */
-    .player-input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 400px;
-    }
-    input[type="text"] {
-      flex: 1;
-      padding: 12px 15px;
-      border-radius: 10px;
+    .btn-main {
+      background: var(--yellow);
+      color: #000;
       border: none;
-      font-size: 1rem;
-      outline: none;
-    }
-    .btn-add {
-      background: var(--green);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-weight: bold;
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      font-weight: 900;
+      border-radius: 12px;
       cursor: pointer;
+      box-shadow: 0 5px 0 #9e7300;
+      margin: 10px;
+      transition: all 0.1s;
+    }
+    .btn-main:active { transform: translateY(4px); box-shadow: none; }
+    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input[type="text"] {
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1.1rem;
+      outline: none;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .pin-display {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 5px;
+      color: var(--yellow);
+      background: rgba(0,0,0,0.3);
+      padding: 10px 30px;
+      border-radius: 15px;
+      margin: 15px 0;
     }
 
     .player-list {
@@ -85,41 +100,20 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 25px;
+      margin: 20px 0;
       width: 100%;
     }
     .player-tag {
       background: rgba(255,255,255,0.2);
-      padding: 8px 16px;
+      padding: 10px 20px;
       border-radius: 20px;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 1.1rem;
     }
 
-    .btn-main {
-      background: var(--yellow);
-      color: #000;
-      border: none;
-      padding: 15px 40px;
-      font-size: 1.3rem;
-      font-weight: 900;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 5px 0 #9e7300;
-      transition: all 0.1s;
-    }
-    .btn-main:active { transform: translateY(4px); box-shadow: none; }
-    .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* ROLETA */
     .wheel-container {
       position: relative;
       margin: 20px 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
     #wheelCanvas {
       border-radius: 50%;
@@ -130,15 +124,13 @@
       top: -15px;
       left: 50%;
       transform: translateX(-50%);
-      width: 0;
-      height: 0;
+      width: 0; height: 0;
       border-left: 15px solid transparent;
       border-right: 15px solid transparent;
       border-top: 25px solid white;
       z-index: 10;
     }
 
-    /* PLACAR & TURNO */
     .turn-bar {
       width: 100%;
       background: rgba(0,0,0,0.2);
@@ -149,19 +141,16 @@
       justify-content: space-between;
       align-items: center;
     }
-    .current-player { font-size: 1.3rem; font-weight: 900; color: var(--yellow); }
 
-    /* PERGUNTA & KAHOOT BUTTONS */
     .question-box {
       background: white;
       color: #333;
-      padding: 25px;
+      padding: 20px;
       border-radius: 15px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       width: 100%;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .options-grid {
@@ -181,23 +170,14 @@
       display: flex;
       align-items: center;
       gap: 15px;
-      text-align: left;
       box-shadow: 0 4px 0 rgba(0,0,0,0.3);
-      transition: transform 0.1s;
     }
-    .opt-btn:active { transform: translateY(3px); box-shadow: none; }
     .opt-btn.red { background: var(--red); }
     .opt-btn.blue { background: var(--blue); }
     .opt-btn.yellow { background: var(--yellow); color: #000; }
     .opt-btn.green { background: var(--green); }
-    
-    .shape { font-size: 1.5rem; }
 
-    /* PODIUM / PLACAR FINAL */
-    .scoreboard {
-      width: 100%;
-      margin: 20px 0;
-    }
+    .scoreboard { width: 100%; margin: 20px 0; }
     .score-row {
       background: rgba(255,255,255,0.1);
       padding: 12px;
@@ -207,41 +187,62 @@
       justify-content: space-between;
       font-weight: bold;
     }
-
-    @media (max-width: 600px) {
-      .options-grid { grid-template-columns: 1fr; }
-      h1 { font-size: 1.6rem; }
-    }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- TELA 1: CADASTRO DE JOGADORES -->
-    <div id="screen-setup" class="screen active">
+    <!-- TELA INICIAL -->
+    <div id="screen-welcome" class="screen active">
       <h1>Quiz do Milhão TGDQ</h1>
-      <p class="subtitle">Edição Multiplayer & Roleta do Conhecimento</p>
+      <p class="subtitle">Multiplayer Conectado em Tempo Real</p>
       
-      <div class="player-input-group">
-        <input type="text" id="playerName" placeholder="Nome do Jogador..." maxlength="12">
-        <button class="btn-add" onclick="addPlayer()">+ Adicionar</button>
-      </div>
-
-      <div class="player-list" id="playerList"></div>
-
-      <button class="btn-main" onclick="startGame()">INICIAR JOGO 🚀</button>
-      <p style="margin-top: 15px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
+      <button class="btn-main" onclick="startHostMode()">🖥️ CRIAR SALA (PROJETOR)</button>
+      <button class="btn-main" style="background: var(--blue); color: white;" onclick="showScreen('screen-join')">📱 ENTRAR COM PIN (CELULAR)</button>
+      
+      <p style="margin-top: 25px; font-size: 0.8rem; opacity: 0.7;">Desenvolvido por Luana, Nathaly e Aryane | SENAI Afonso Pena</p>
     </div>
 
-    <!-- TELA 2: ROLETA -->
-    <div id="screen-wheel" class="screen">
+    <!-- TELA ENTRAR COM PIN -->
+    <div id="screen-join" class="screen">
+      <h2>Entrar na Partida</h2>
+      <p class="subtitle">Insira o código gerado no projetor:</p>
+      
+      <input type="text" id="inputPin" placeholder="Código PIN (Ex: 4821)" maxlength="6">
+      <input type="text" id="inputPlayerName" placeholder="Seu Nome..." maxlength="12">
+      
+      <button class="btn-main" onclick="joinAsPlayer()">ENTRAR AGORA 🚀</button>
+      <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
+    </div>
+
+    <!-- TELA AGUARDANDO (CELULAR) -->
+    <div id="screen-player-wait" class="screen">
+      <h2 id="waitPlayerName">Conectado!</h2>
+      <p class="subtitle">Aguarde a rodada ser iniciada no ecrã principal.</p>
+      <div class="pin-display" id="waitPin">0000</div>
+    </div>
+
+    <!-- TELA LOBBY (PROJETOR) -->
+    <div id="screen-host-lobby" class="screen">
+      <h2>Sala Aberta!</h2>
+      <p class="subtitle">Digite este código nos celulares para entrar:</p>
+      <div class="pin-display" id="hostPinDisplay">GERANDO...</div>
+
+      <h3>Alunos Conectados:</h3>
+      <div class="player-list" id="hostPlayerList">Nenhum aluno entrou ainda...</div>
+
+      <button class="btn-main" onclick="startHostGame()">INICIAR PARTIDA 🚀</button>
+    </div>
+
+    <!-- TELA ROLETA (PROJETOR) -->
+    <div id="screen-host-wheel" class="screen">
       <div class="turn-bar">
-        <span>Vez de: <strong class="current-player" id="wheelPlayerName">---</strong></span>
+        <span>Vez de: <strong style="color: var(--yellow);" id="wheelPlayerName">---</strong></span>
       </div>
-      
-      <h2>Gire a Roleta para Definir os Pontos!</h2>
-      
+
+      <h2>Gire a Roleta de Pontos!</h2>
+
       <div class="wheel-container">
         <div class="wheel-pointer"></div>
         <canvas id="wheelCanvas" width="300" height="300"></canvas>
@@ -250,30 +251,27 @@
       <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
     </div>
 
-    <!-- TELA 3: PERGUNTA (ESTILO KAHOOT) -->
+    <!-- TELA PERGUNTA -->
     <div id="screen-question" class="screen">
       <div class="turn-bar">
-        <span>Jogador: <strong class="current-player" id="qPlayerName">---</strong></span>
+        <span>Jogador: <strong style="color: var(--yellow);" id="qPlayerName">---</strong></span>
         <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
       </div>
 
       <div class="question-box" id="questionText">Texto da pergunta aqui</div>
 
       <div class="options-grid">
-        <button class="opt-btn red" onclick="answer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
-        <button class="opt-btn blue" onclick="answer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
-        <button class="opt-btn yellow" onclick="answer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
-        <button class="opt-btn green" onclick="answer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
+        <button class="opt-btn red" onclick="sendAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
+        <button class="opt-btn blue" onclick="sendAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
+        <button class="opt-btn yellow" onclick="sendAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
+        <button class="opt-btn green" onclick="sendAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
       </div>
     </div>
 
-    <!-- TELA 4: RESULTADO FINAL / PLACAR -->
+    <!-- TELA FINAL -->
     <div id="screen-result" class="screen">
       <h1>🏆 FIM DA PARTIDA! 🏆</h1>
-      <p class="subtitle">Classificação Final dos Especialistas em TGDQ</p>
-
       <div class="scoreboard" id="finalScoreboard"></div>
-
       <button class="btn-main" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
     </div>
 
@@ -281,152 +279,155 @@
 
   <script>
     const questions = [
-      {
-        q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?",
-        opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"],
-        correct: 1
-      },
-      {
-        q: "Como tratar células ausentes (dados nulos) antes da análise estatística?",
-        opts: ["Excluir todo o banco de dados", "Imputação por Mediana/Média ou remoção tratada", "Preencher com zero sempre", "Ignorar o problema"],
-        correct: 1
-      },
-      {
-        q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?",
-        opts: ["Gráfico de Setores (Pizza)", "Gráfico de Linhas", "Scatter Plot (Dispersão)", "Histograma"],
-        correct: 1
-      },
-      {
-        q: "O que representa o desvio padrão em um conjunto de dados?",
-        opts: ["O maior valor do conjunto", "A dispersão dos dados em relação à média", "O número total de elementos", "A soma dos outliers"],
-        correct: 1
-      },
-      {
-        q: "Qual a melhor visualização para identificar a correlação entre duas variáveis quantitativas?",
-        opts: ["Gráfico de Dispersão (Scatter Plot)", "Gráfico de Barras", "Gráfico de Pizza", "Tabela Dinâmica"],
-        correct: 0
-      }
+      { q: "Qual medida de tendência central é recomendada quando existem outliers na amostra?", opts: ["Média Aritmética", "Mediana", "Moda", "Desvio Padrão"], correct: 1 },
+      { q: "Como tratar células ausentes (dados nulos) antes da análise estatística?", opts: ["Excluir tudo", "Imputação por Mediana/Média", "Preencher com zero", "Ignorar"], correct: 1 },
+      { q: "Qual o gráfico ideal para analisar tendências e variações ao longo do tempo?", opts: ["Gráfico de Pizza", "Gráfico de Linhas", "Scatter Plot", "Histograma"], correct: 1 },
+      { q: "O que representa o desvio padrão em um conjunto de dados?", opts: ["O maior valor", "A dispersão em relação à média", "O total de elementos", "A soma dos outliers"], correct: 1 },
+      { q: "Qual a melhor visualização para identificar a correlação entre duas variáveis?", opts: ["Scatter Plot", "Gráfico de Barras", "Gráfico de Pizza", "Tabela"], correct: 0 }
     ];
-
-    let players = [];
-    let currentPlayerIdx = 0;
-    let currentQuestionIdx = 0;
-    let currentPointValue = 100;
 
     const wheelSlices = [100, 200, 500, 1000, 0, 2000];
     const sliceColors = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#333333', '#9c27b0'];
-    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA A VEZ', '2.000 Pts!'];
+    const sliceLabels = ['100 Pts', '200 Pts', '500 Pts', '1.000 Pts', 'PASSA VEZ', '2.000 Pts!'];
 
+    let peer = null;
+    let conn = null;
+    let connections = [];
+    let isHost = false;
+    let roomPin = "";
+    let players = [];
+    let currentPlayerIdx = 0;
+    let currentQuestionIdx = 0;
+    let currentPointValue = 0;
     let currentAngle = 0;
-    let isSpinning = false;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    function addPlayer() {
-      const input = document.getElementById('playerName');
-      const name = input.value.trim();
-      if(name && !players.some(p => p.name === name)) {
-        players.push({ name: name, score: 0 });
-        input.value = '';
-        renderPlayers();
-      }
+    // MODO HOST (PROJETOR)
+    function startHostMode() {
+      isHost = true;
+      roomPin = Math.floor(1000 + Math.random() * 9000).toString();
+      document.getElementById('hostPinDisplay').innerText = roomPin;
+      showScreen('screen-host-lobby');
+
+      peer = new Peer('tgdq-quiz-' + roomPin);
+
+      peer.on('connection', (c) => {
+        connections.push(c);
+        c.on('data', (data) => {
+          if (data.type === 'JOIN') {
+            players.push({ id: c.peer, name: data.name, score: 0 });
+            updateHostPlayerList();
+          } else if (data.type === 'ANSWER') {
+            processAnswer(data.optionIndex);
+          }
+        });
+      });
     }
 
-    function renderPlayers() {
-      const list = document.getElementById('playerList');
+    function updateHostPlayerList() {
+      const list = document.getElementById('hostPlayerList');
       list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
-    function startGame() {
-      if(players.length === 0) {
-        alert('Adicione pelo menos 1 jogador!');
+    // MODO JOGADOR (CELULAR)
+    function joinAsPlayer() {
+      const pin = document.getElementById('inputPin').value.trim();
+      const name = document.getElementById('inputPlayerName').value.trim();
+
+      if(!pin || !name) {
+        alert('Preencha o PIN e seu Nome!');
         return;
       }
-      drawWheel(currentAngle);
-      nextTurn();
+
+      peer = new Peer();
+      peer.on('open', () => {
+        conn = peer.connect('tgdq-quiz-' + pin);
+        conn.on('open', () => {
+          conn.send({ type: 'JOIN', name: name });
+          document.getElementById('waitPlayerName').innerText = `Olá, ${name}!`;
+          document.getElementById('waitPin').innerText = pin;
+          showScreen('screen-player-wait');
+        });
+
+        conn.on('data', (data) => {
+          if (data.type === 'SHOW_QUESTION') {
+            renderQuestion(data.question, data.playerName, data.points);
+          } else if (data.type === 'GAME_OVER') {
+            renderResult(data.players);
+          }
+        });
+      });
     }
 
-    function nextTurn() {
+    function startHostGame() {
+      if(players.length === 0) {
+        alert('Aguarde pelo menos 1 jogador entrar!');
+        return;
+      }
+      drawWheel(0);
+      nextTurnHost();
+    }
+
+    function nextTurnHost() {
       if(currentQuestionIdx >= questions.length) {
-        endGame();
+        broadcast({ type: 'GAME_OVER', players: players });
+        renderResult(players);
         return;
       }
       document.getElementById('wheelPlayerName').innerText = players[currentPlayerIdx].name;
       document.getElementById('btnSpin').disabled = false;
-      isSpinning = false;
-      showScreen('screen-wheel');
+      showScreen('screen-host-wheel');
     }
 
-    function drawWheel(angleInRad) {
+    function drawWheel(angle) {
       const canvas = document.getElementById('wheelCanvas');
       const ctx = canvas.getContext('2d');
       const radius = canvas.width / 2;
-      const numSlices = wheelSlices.length;
-      const sliceAngle = (2 * Math.PI) / numSlices;
+      const sliceAngle = (2 * Math.PI) / wheelSlices.length;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       ctx.save();
       ctx.translate(radius, radius);
-      ctx.rotate(angleInRad);
+      ctx.rotate(angle);
 
-      for (let i = 0; i < numSlices; i++) {
-        const start = i * sliceAngle;
-        const end = start + sliceAngle;
-
+      for (let i = 0; i < wheelSlices.length; i++) {
         ctx.beginPath();
         ctx.fillStyle = sliceColors[i];
         ctx.moveTo(0, 0);
-        ctx.arc(0, 0, radius, start, end);
+        ctx.arc(0, 0, radius, i * sliceAngle, (i + 1) * sliceAngle);
         ctx.fill();
 
         ctx.save();
-        ctx.rotate(start + sliceAngle / 2);
+        ctx.rotate(i * sliceAngle + sliceAngle / 2);
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 14px Montserrat';
         ctx.textAlign = 'right';
         ctx.fillText(sliceLabels[i], radius - 15, 5);
         ctx.restore();
       }
-
       ctx.restore();
     }
 
     function spinWheel() {
-      if (isSpinning) return;
-      isSpinning = true;
-
-      const btn = document.getElementById('btnSpin');
-      btn.disabled = true;
-
-      const numSlices = wheelSlices.length;
-      const selectedIndex = Math.floor(Math.random() * numSlices);
-      const sliceAngleDeg = 360 / numSlices;
-
+      document.getElementById('btnSpin').disabled = true;
+      const selectedIndex = Math.floor(Math.random() * wheelSlices.length);
+      const sliceAngleDeg = 360 / wheelSlices.length;
       const targetAngleDeg = 270 - (selectedIndex * sliceAngleDeg + sliceAngleDeg / 2);
-      const fullSpinsDeg = 360 * 5;
-      const totalRotationDeg = fullSpinsDeg + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
+      const totalRotationDeg = (360 * 5) + (targetAngleDeg - ((currentAngle * 180 / Math.PI) % 360));
       
       const startAngle = currentAngle;
       const targetAngleRad = startAngle + (totalRotationDeg * Math.PI / 180);
-      
       const duration = 4000;
       let startTime = null;
 
-      function easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
-      }
-
       function animate(timestamp) {
         if (!startTime) startTime = timestamp;
-        const elapsed = timestamp - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easedProgress = easeOutCubic(progress);
-
-        currentAngle = startAngle + (targetAngleRad - startAngle) * easedProgress;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        currentAngle = startAngle + (targetAngleRad - startAngle) * (1 - Math.pow(1 - progress, 3));
         drawWheel(currentAngle);
 
         if (progress < 1) {
@@ -434,64 +435,82 @@
         } else {
           currentPointValue = wheelSlices[selectedIndex];
           if (currentPointValue === 0) {
-            alert(`Ops! ${players[currentPlayerIdx].name} caiu no PASSA A VEZ!`);
+            alert(`PASSA A VEZ para ${players[currentPlayerIdx].name}!`);
             currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-            nextTurn();
+            nextTurnHost();
           } else {
-            showQuestion();
+            sendQuestionToAll();
           }
         }
       }
-
       requestAnimationFrame(animate);
     }
 
-    function showQuestion() {
+    function sendQuestionToAll() {
       const q = questions[currentQuestionIdx];
-      document.getElementById('qPlayerName').innerText = players[currentPlayerIdx].name;
-      document.getElementById('qValue').innerText = `${currentPointValue} PTS`;
-      document.getElementById('questionText').innerText = q.q;
+      const pName = players[currentPlayerIdx].name;
 
+      broadcast({
+        type: 'SHOW_QUESTION',
+        question: q,
+        playerName: pName,
+        points: currentPointValue
+      });
+
+      renderQuestion(q, pName, currentPointValue);
+    }
+
+    function renderQuestion(q, playerName, points) {
+      document.getElementById('qPlayerName').innerText = playerName;
+      document.getElementById('qValue').innerText = `${points} PTS`;
+      document.getElementById('questionText').innerText = q.q;
       for (let i = 0; i < 4; i++) {
         document.getElementById(`opt${i}`).innerText = q.opts[i];
       }
-
       showScreen('screen-question');
     }
 
-    function answer(selectedIndex) {
+    function sendAnswer(optionIndex) {
+      if(isHost) {
+        processAnswer(optionIndex);
+      } else if(conn) {
+        conn.send({ type: 'ANSWER', optionIndex: optionIndex });
+      }
+    }
+
+    function processAnswer(optionIndex) {
+      if(!isHost) return;
+
       const q = questions[currentQuestionIdx];
-      if (selectedIndex === q.correct) {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      if(optionIndex === q.correct) {
+        confetti({ particleCount: 100, spread: 70 });
         players[currentPlayerIdx].score += currentPointValue;
-        alert(`RESPOSTA CERTA! +${currentPointValue} Pontos!`);
+        alert(`ACERTOU! +${currentPointValue} Pontos!`);
       } else {
-        alert(`RESPOSTA INCORRETA! A resposta certa era: ${q.opts[q.correct]}`);
+        alert(`ERROU! A certa era: ${q.opts[q.correct]}`);
       }
 
       currentQuestionIdx++;
       currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-      nextTurn();
+      nextTurnHost();
     }
 
-    function endGame() {
-      confetti({ particleCount: 200, spread: 100 });
-      players.sort((a, b) => b.score - a.score);
+    function broadcast(data) {
+      connections.forEach(c => c.send(data));
+    }
 
+    function renderResult(pList) {
+      confetti({ particleCount: 200, spread: 100 });
+      const sorted = [...pList].sort((a,b) => b.score - a.score);
       const board = document.getElementById('finalScoreboard');
-      board.innerHTML = players.map((p, idx) => `
+      board.innerHTML = sorted.map((p, idx) => `
         <div class="score-row">
           <span>${idx + 1}º ${p.name}</span>
           <span>${p.score} PTS</span>
         </div>
       `).join('');
-
       showScreen('screen-result');
     }
-
-    window.onload = () => {
-      drawWheel(0);
-    };
   </script>
 </body>
 </html>
