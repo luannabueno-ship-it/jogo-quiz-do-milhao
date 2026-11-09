@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz TGDQ SENAI - Todos Jogam Juntos</title>
+  <title>Quiz TGDQ SENAI - Encerramento Automático por Respostas</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
@@ -128,10 +128,24 @@
       z-index: 10;
     }
 
+    .timer-circle {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--yellow);
+      background: rgba(0,0,0,0.3);
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--yellow);
+    }
+
     .turn-bar {
       width: 100%;
       background: rgba(0,0,0,0.2);
-      padding: 15px;
+      padding: 12px;
       border-radius: 12px;
       margin-bottom: 20px;
       display: flex;
@@ -185,10 +199,6 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
-
-    @media (max-width: 600px) {
-      .options-grid { grid-template-columns: 1fr; }
-    }
   </style>
 </head>
 <body>
@@ -218,12 +228,11 @@
       <button class="btn-main" style="background: #555; color: white;" onclick="showScreen('screen-welcome')">VOLTAR</button>
     </div>
 
-    <!-- TELA JOGADOR: AGUARDANDO PROJETOR -->
+    <!-- TELA JOGADOR: AGUARDANDO -->
     <div id="screen-player-wait" class="screen">
       <h2 id="waitPlayerName">Conectado!</h2>
-      <p class="subtitle">Você está pronto para responder!</p>
+      <p class="subtitle" id="waitStatusText">Aguarde o início da próxima pergunta...</p>
       <div class="pin-display" id="waitPin">0000</div>
-      <p id="waitStatusText">Olhe para o projetor para acompanhar a roleta!</p>
     </div>
 
     <!-- TELA HOST: LOBBY -->
@@ -250,31 +259,28 @@
       <button class="btn-main" id="btnSpin" onclick="spinWheel()">GIRAR ROLETA 🎡</button>
     </div>
 
-    <!-- TELA DE PERGUNTA (PROJETOR E CELULAR) -->
+    <!-- TELA DE PERGUNTA -->
     <div id="screen-question" class="screen">
       <div class="turn-bar">
-        <span>TODOS RESPONDEM</span>
+        <div class="timer-circle" id="timerBox">20</div>
+        <span id="answeredCounter">Respostas: 0/0</span>
         <span>Valendo: <strong style="color: var(--yellow);" id="qValue">0 PTS</strong></span>
       </div>
 
       <div class="question-box" id="questionText">Carregando pergunta...</div>
 
-      <div class="options-grid" id="optionsContainer">
+      <div class="options-grid">
         <button class="opt-btn red" onclick="submitAnswer(0)"><span class="shape">▲</span> <span id="opt0">Opção 1</span></button>
         <button class="opt-btn blue" onclick="submitAnswer(1)"><span class="shape">◆</span> <span id="opt1">Opção 2</span></button>
         <button class="opt-btn yellow" onclick="submitAnswer(2)"><span class="shape">●</span> <span id="opt2">Opção 3</span></button>
         <button class="opt-btn green" onclick="submitAnswer(3)"><span class="shape">■</span> <span id="opt3">Opção 4</span></button>
-      </div>
-
-      <div id="hostControls" style="display: none; margin-top: 20px;">
-        <button class="btn-main" onclick="finishQuestionRound()">FINALIZAR PERGUNTA ➔</button>
       </div>
     </div>
 
     <!-- TELA DE RANKING FINAL -->
     <div id="screen-result" class="screen">
       <h1>🏆 RANKING FINAL SENAI 🏆</h1>
-      <p class="subtitle">Quem teve mais pontos ganha!</p>
+      <p class="subtitle">Classificação Final de Pontuação</p>
 
       <div class="scoreboard" id="finalScoreboard"></div>
 
@@ -300,11 +306,12 @@
     let isHost = false;
     let roomPin = "";
     let myPlayerName = "";
-    let players = []; // [{name, score, answered, selectedOpt}]
+    let players = [];
     let currentQuestionIdx = 0;
     let currentPointValue = 0;
     let currentAngle = 0;
     let hasAnsweredCurrentQuestion = false;
+    let timerInterval = null;
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -317,10 +324,7 @@
         keepalive: 60
       });
 
-      client.on('connect', () => {
-        onConnected();
-      });
-
+      client.on('connect', () => { onConnected(); });
       client.on('message', (topic, payload) => {
         try {
           const msg = JSON.parse(payload.toString());
@@ -335,12 +339,10 @@
       }
     }
 
-    // INICIALIZAÇÃO DO HOST (PROJETOR)
     function initHost() {
       isHost = true;
       roomPin = Math.floor(1000 + Math.random() * 9000).toString();
       document.getElementById('hostPinDisplay').innerText = roomPin;
-      document.getElementById('hostControls').style.display = 'block';
       showScreen('screen-host-lobby');
 
       connectBroker(() => {
@@ -353,7 +355,6 @@
       list.innerHTML = players.map(p => `<div class="player-tag">👤 ${p.name}</div>`).join('');
     }
 
-    // INICIALIZAÇÃO DO JOGADOR (CELULAR)
     function joinRoom() {
       const pin = document.getElementById('inputPin').value.trim();
       const name = document.getElementById('inputPlayerName').value.trim();
@@ -363,9 +364,8 @@
         return;
       }
 
-      const btn = document.getElementById('btnJoinAction');
-      btn.innerText = "CONECTANDO...";
-      btn.disabled = true;
+      document.getElementById('btnJoinAction').innerText = "CONECTANDO...";
+      document.getElementById('btnJoinAction').disabled = true;
 
       roomPin = pin;
       myPlayerName = name;
@@ -389,21 +389,30 @@
           }
         } else if (msg.type === 'SUBMIT_ANSWER') {
           const player = players.find(p => p.name === msg.playerName);
-          if (player) {
+          if (player && !player.answered) {
             player.answered = true;
             player.selectedOpt = msg.optionIndex;
+            checkAllAnswered();
           }
         }
       } else {
         if (msg.type === 'SHOW_QUESTION') {
           hasAnsweredCurrentQuestion = false;
           renderQuestion(msg.question, msg.points);
-        } else if (msg.type === 'WAIT_ROUND') {
-          document.getElementById('waitStatusText').innerText = "Resposta enviada! Aguarde os outros jogadores.";
-          showScreen('screen-player-wait');
         } else if (msg.type === 'GAME_OVER') {
           renderResult(msg.players);
         }
+      }
+    }
+
+    function checkAllAnswered() {
+      const totalAnswered = players.filter(p => p.answered).length;
+      document.getElementById('answeredCounter').innerText = `Respostas: ${totalAnswered}/${players.length}`;
+
+      // Se TODOS os jogadores responderam, encerra o tempo na hora!
+      if (totalAnswered >= players.length && players.length > 0) {
+        clearInterval(timerInterval);
+        finishQuestionRound();
       }
     }
 
@@ -477,8 +486,6 @@
 
     function sendQuestionToAll() {
       const q = questions[currentQuestionIdx];
-      
-      // Reseta respostas da rodada
       players.forEach(p => { p.answered = false; p.selectedOpt = -1; });
 
       publishMsg({
@@ -488,6 +495,22 @@
       });
 
       renderQuestion(q, currentPointValue);
+
+      if (isHost) {
+        document.getElementById('answeredCounter').innerText = `Respostas: 0/${players.length}`;
+        let timeLeft = 20;
+        document.getElementById('timerBox').innerText = timeLeft;
+        clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          document.getElementById('timerBox').innerText = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            finishQuestionRound();
+          }
+        }, 1000);
+      }
     }
 
     function renderQuestion(q, points) {
@@ -506,7 +529,7 @@
 
       if (!isHost) {
         publishMsg({ type: 'SUBMIT_ANSWER', playerName: myPlayerName, optionIndex: optionIndex });
-        document.getElementById('waitStatusText').innerText = "Resposta gravada! Aguarde a finalização da rodada.";
+        document.getElementById('waitStatusText').innerText = "Resposta gravada! Aguarde os outros alunos terminarem.";
         showScreen('screen-player-wait');
       }
     }
@@ -516,7 +539,6 @@
 
       const q = questions[currentQuestionIdx];
 
-      // Computa pontuação de quem acertou
       players.forEach(p => {
         if (p.selectedOpt === q.correct) {
           p.score += currentPointValue;
@@ -524,10 +546,11 @@
       });
 
       confetti({ particleCount: 100, spread: 70 });
-      alert(`Rodada finalizada! Resposta correta: ${q.opts[q.correct]}`);
+      alert(`Rodada Encerrada! A resposta correta era: ${q.opts[q.correct]}`);
 
       currentQuestionIdx++;
 
+      // Se respondeu todas as perguntas, encerra a partida e mostra o Ranking
       if (currentQuestionIdx >= questions.length) {
         publishMsg({ type: 'GAME_OVER', players: players });
         renderResult(players);
