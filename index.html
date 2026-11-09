@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Show do Milhão: Dados Quantitativos - SENAI Afonso Pena</title>
+  <!-- Google Fonts & Canvas Confetti -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f0c20 0%, #1a103c 50%, #2b0854 100%);
+      --card-bg: rgba(255, 255, 255, 0.07);
+      --card-border: rgba(255, 255, 255, 0.18);
+      --gold: #ffd700;
+      --gold-hover: #ffea00;
+      --accent-blue: #00d2ff;
+      --accent-purple: #9d4edd;
+      --success: #00e676;
+      --danger: #ff1744;
+      --text: #ffffff;
+      --text-sub: #d1c4e9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 900px;
+      background: rgba(18, 11, 40, 0.85);
+      backdrop-filter: blur(16px);
+      border: 3px solid var(--gold);
+      border-radius: 24px;
+      box-shadow: 0 0 35px rgba(255, 215, 0, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.6);
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      display: none;
+      animation: fadeIn 0.4s ease-in-out forwards;
+    }
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 12px 20px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 20px;
+    }
+
+    .lives-box {
+      font-size: 1.5rem;
+      letter-spacing: 4px;
+      filter: drop-shadow(0 0 8px rgba(255, 23, 68, 0.6));
+    }
+
+    .score-box {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .phase-badge {
+      background: linear-gradient(90deg, #7b2cbf, #9d4edd);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 900;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 15px;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--accent-blue);
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    p {
+      color: var(--text-sub);
+      line-height: 1.6;
+      margin-bottom: 15px;
+      font-size: 1rem;
+    }
+
+    .story-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 5px solid var(--gold);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 20px 0;
+    }
+
+    .credits {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #a0a0c0;
+      margin-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 10px;
+    }
+
+    .question-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .data-table-container {
+      overflow-x: auto;
+      margin: 15px 0;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(0, 0, 0, 0.3);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      background: linear-gradient(90deg, #3c096c, #5a189a);
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .highlight-null {
+      background: rgba(255, 23, 68, 0.3);
+      color: #ff8a80;
+      font-weight: 700;
+    }
+
+    .highlight-outlier {
+      background: rgba(255, 215, 0, 0.3);
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    @media(min-width: 600px) {
+      .btn-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #2a085c 0%, #48128f 100%);
+      border: 2px solid var(--card-border);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      border-color: var(--gold);
+      box-shadow: 0 6px 18px rgba(255, 215, 0, 0.3);
+      background: linear-gradient(135deg, #3c096c 0%, #6a1b9a 100%);
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      filter: grayscale(1);
+    }
+
+    .btn-letter {
+      background: var(--gold);
+      color: #000;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .btn-main {
+      background: linear-gradient(90deg, #ff9100, #ff6d00);
+      border: none;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 800;
+      padding: 16px 32px;
+      border-radius: 50px;
+      cursor: pointer;
+      width: 100%;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 6px 20px rgba(255, 109, 0, 0.4);
+      transition: all 0.3s ease;
+      margin-top: 15px;
+    }
+
+    .btn-main:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 25px rgba(255, 109, 0, 0.6);
+      background: linear-gradient(90deg, #ffa726, #ff8f00);
+    }
+
+    .btn-bonus {
+      background: linear-gradient(90deg, #00b4d8, #0077b6);
+      border: none;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+      transition: all 0.25s ease;
+    }
+
+    .btn-bonus:hover:not(:disabled) {
+      box-shadow: 0 0 15px rgba(0, 180, 216, 0.6);
+      transform: scale(1.02);
+    }
+
+    .btn.correct {
+      background: linear-gradient(135deg, #00c853 0%, #009624 100%) !important;
+      border-color: #69f0ae !important;
+      animation: pulseGreen 0.6s ease infinite alternate;
+    }
+
+    .btn.wrong {
+      background: linear-gradient(135deg, #d50000 0%, #9b0000 100%) !important;
+      border-color: #ff5252 !important;
+    }
+
+    @keyframes pulseGreen {
+      from { box-shadow: 0 0 10px #00c853; }
+      to { box-shadow: 0 0 25px #69f0ae; }
+    }
+
+    .feedback-box {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      font-weight: 600;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .feedback-box.correct-bg {
+      background: rgba(0, 200, 83, 0.2);
+      border: 1px solid #00c853;
+      color: #b9f6ca;
+    }
+
+    .feedback-box.wrong-bg {
+      background: rgba(213, 0, 0, 0.2);
+      border: 1px solid #d50000;
+      color: #ff8a80;
+    }
+
+    .result-card {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .result-icon {
+      font-size: 4rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .badge-win {
+      display: inline-block;
+      background: linear-gradient(90deg, #ffd700, #ff8f00);
+      color: #000;
+      font-weight: 900;
+      padding: 10px 20px;
+      border-radius: 30px;
+      margin: 15px 0;
+      font-size: 1.1rem;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--gold));
+      transition: width 0.4s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- Barra Superior de Vidas e Pontuação -->
+    <div class="header-bar" id="headerBar" style="display: none;">
+      <div class="lives-box" id="livesContainer">❤️❤️❤️</div>
+      <div class="phase-badge" id="phaseBadge">Fase 1 de 2</div>
+      <div class="score-box" id="scoreDisplay">0 / 1.000.000 pts</div>
+    </div>
+
+    <!-- Barra de Progresso -->
+    <div class="progress-bar-container" id="progressContainer" style="display: none;">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <!-- 1. TELA INICIAL -->
+    <div id="screenStart" class="screen active">
+      <h1>Quiz do Milhão</h1>
+      <h2>Edição TGDQ - Tratamento de Dados Quantitativos</h2>
+      
+      <div class="story-box">
+        <p><strong>👨‍💻 Sua Missão:</strong> Você é o <strong>Cientista de Dados Júnior</strong> contratado por uma grande empresa de tecnologia!</p>
+        <p><strong>🚨 O Problema:</strong> O banco de dados de vendas foi corrompido por falhas de digitação e inconsistências do sistema antes da auditoria anual.</p>
+        <p><strong>🎤 O Desafio:</strong> No palco do <em>Show do Milhão</em>, responda às perguntas de tratamento e análise quantitativa para higienizar os dados, subir na premiação e salvar a empresa!</p>
+      </div>
+
+      <div class="story-box" style="border-left-color: var(--accent-blue);">
+        <p><strong>📜 Regras da Partida:</strong></p>
+        <ul style="margin-left: 20px; line-height: 1.8;">
+          <li>❤️ <strong>3 Vidas:</strong> Cada erro custa 1 vida. Se perder as 3, é Game Over!</li>
+          <li>🎓 <strong>Ajuda das Universitárias:</strong> 1 bônus por partida para eliminar duas alternativas erradas.</li>
+          <li>🏆 <strong>Meta Final:</strong> Alcançar <strong>1.000.000 de Pontos / Linhas Tratadas</strong> e vencer o Chefão.</li>
+        </ul>
+      </div>
+
+      <button class="btn-main" onclick="startGame()">▶ Entrar no Palco e Jogar!</button>
+
+      <div class="credits">
+        Desenvolvido por: <strong>Luana, Nathaly e Aryane</strong> | SENAI Afonso Pena
+      </div>
+    </div>
+
+    <!-- 2. TELA DE JOGO / QUIZ -->
+    <div id="screenQuiz" class="screen">
+      <div class="question-box">
+        <h3 id="questionTitle" style="color: var(--gold); margin-bottom: 10px;">Fase 1: Pergunta 1</h3>
+        <p id="questionText" style="font-size: 1.1rem; font-weight: 600; color: #fff;">Texto da Pergunta</p>
+        <div id="dataContextBox"></div>
+      </div>
+
+      <!-- Bônus -->
+      <button class="btn-bonus" id="btnBonus" onclick="useUniversitarias()">
+        🎓 Ajuda das Universitárias (Eliminar 2 Opções)
+      </button>
+
+      <!-- Grade de Respostas -->
+      <div class="btn-grid" id="optionsGrid"></div>
+
+      <!-- Caixa de Feedback -->
+      <div id="feedbackBox" class="feedback-box"></div>
+
+      <!-- Botão de Avanço -->
+      <button class="btn-main" id="btnNext" style="display: none;" onclick="nextQuestion()">Próxima Pergunta ➔</button>
+    </div>
+
+    <!-- 3. TELA DE VITÓRIA -->
+    <div id="screenWin" class="screen result-card">
+      <span class="result-icon">🏆🎉✨</span>
+      <h1>PARABÉNS! VOCÊ VENCEU!</h1>
+      <h2>Você conquistou 1.000.000 de Pontos / Linhas Tratadas!</h2>
+      
+      <p>Você higienizou todos os dados do banco de vendas, convenceu a diretoria com os gráficos perfeitos e salvou o relatório financeiro!</p>
+      
+      <div>
+        <span class="badge-win">🏅 SELO: ESPECIALISTA EM DADOS QUANTITATIVOS SENAI</span>
+      </div>
+
+      <div class="story-box" style="margin: 20px auto; max-width: 600px;">
+        <p><strong>Relatório Aprovado com Sucesso!</strong></p>
+        <p>• Células ausentes tratadas com precisão estatística (Mediana).<br>
+        • Outliers isolados e higienizados.<br>
+        • Gráfico de Linhas (Tendência) e Scatter Plot (Correlação) apresentados com mestria!</p>
+      </div>
+
+      <button class="btn-main" onclick="resetGame()">🔄 Jogar Novamente</button>
+      
+      <div class="credits">
+        Projeto Game Dev - Assistente Administrativo SENAI Afonso Pena<br>
+        Integrantes: Luana, Nathaly e Aryane
+      </div>
+    </div>
+
+    <!-- 4. TELA DE GAME OVER -->
+    <div id="screenGameOver" class="screen result-card">
+      <span class="result-icon">💥📉💔</span>
+      <h1 style="background: linear-gradient(180deg, #ffffff 0%, var(--danger) 100%); -webkit-background-clip: text;">GAME OVER!</h1>
+      <h2>Relatório Rejeitado pela Diretoria!</h2>
+      
+      <p>As suas 3 vidas acabaram e as inconsistências dos dados comprometeram a análise estatística da empresa.</p>
+
+      <div class="story-box" style="border-left-color: var(--danger); margin: 20px auto; max-width: 600px;">
+        <p><strong>Dica de Estudo TGDQ:</strong> Lembre-se sempre de substituir células ausentes pela mediana quando houver outliers e selecionar Gráficos de Linhas para tendências temporais!</p>
+      </div>
+
+      <button class="btn-main" style="background: linear-gradient(90deg, #d50000, #9b0000);" onclick="resetGame()">🔁 Tentar Novamente</button>
+    </div>
+  </div>
+
+  <script>
+    /* LÓGICA E ESTADO DO JOGO */
+    let currentPhase = 1;
+    let currentQuestionIdx = 0;
+    let lives = 3;
+    let score = 0;
+    let bonusAvailable = true;
+    let canAnswer = true;
+
+    /* BANCO DE PERGUNTAS (Conforme o Planejamento SENAI) */
+    const questions = [
+      // FASE 1: NÍVEL FÁCIL
+      {
+        phase: 1,
+        title: "Fase 1 (Inicial): A Caça aos Valores Ausentes",
+        text: "Observe a tabela de vendas do 1º Trimestre. A célula do mês de Fevereiro está em BRANCO (valor ausente). Sabendo que o valor discrepante (outlier) de R$ 9.999.999,00 afeta a média, qual é a melhor técnica estatística para preencher o valor ausente sem distorcer o resultado?",
+        showTable: true,
+        tableData: [
+          { mes: "Janeiro", venda: "R$ 15.000,00" },
+          { mes: "Fevereiro (NULO)", venda: "<span class='highlight-null'>[ Em Branco ]</span>" },
+          { mes: "Março", venda: "R$ 18.000,00" },
+          { mes: "Venda Errada (Outlier)", venda: "<span class='highlight-outlier'>R$ 9.999.999,00</span>" }
+        ],
+        options: [
+          "Preencher a célula em branco com zero (0) para não alterar o acumulado.",
+          "Substituir a célula ausente pela MEDIANA dos dados, pois ela é resistente a outliers.",
+          "Substituir pela MÉDIA simples de todos os valores, ignorando o impacto do outlier.",
+          "Deletar a coluna inteira do relatório financeiro antes da reunião."
+        ],
+        correct: 1,
+        points: 250000,
+        explanation: "Correto! A MEDIANA é a medida de tendência central ideal quando existem outliers (como R$ 9.999.999,00), pois não é distorcida por valores extremos!"
+      },
+      {
+        phase: 1,
+        title: "Fase 1 (Inicial): Isolamento de Outliers",
+        text: "Após identificar o valor discrepante de R$ 9.999.999,00 digitado por engano em uma venda comum, qual é a ação correta de gerenciamento de dados quantitativos?",
+        showTable: false,
+        options: [
+          "Manter o valor de 9 milhões para inflar o faturamento da empresa no papel.",
+          "Isolar o outlier, higienizar a célula e corrigir o registro para o valor real ou razoável.",
+          "Multiplicar todas as outras vendas por 100 para igualar ao valor gigante.",
+          "Somar o valor discrepante apenas nas vendas realizadas no fim de semana."
+        ],
+        correct: 1,
+        points: 250000,
+        explanation: "Excelente! Isolamento e sanitização de outliers garante que as decisões administrativas sejam baseadas em dados estatísticos reais!"
+      },
+
+      // FASE 2: CHEFÃO (Gráficos e Diretoria)
+      {
+        phase: 2,
+        title: "Fase 2 (Chefão): Gráfico de Tendência Temporal",
+        text: "O Diretor Executivo (Chefão) exige ver a TENDÊNCIA TEMPORAL do faturamento da empresa ao longo dos últimos 5 anos. Qual é o gráfico correto para apresentar essa evolução histórica ao longo do tempo?",
+        showTable: false,
+        options: [
+          "Gráfico de Pizza (Setores), dividindo 5 anos em fatias.",
+          "Gráfico de Linhas, ideal para demonstrar variações e tendências contínuas ao longo do tempo.",
+          "Gráfico de Rosca sem legenda de datas.",
+          "Gráfico de Pirâmide Etária."
+        ],
+        correct: 1,
+        points: 250000,
+        explanation: "Perfeito! O Gráfico de Linhas é a ferramenta de visualização ideal para séries temporais e análise de tendências históricas!"
+      },
+      {
+        phase: 2,
+        title: "Fase 2 (Chefão): Relação Estatística e Correlação",
+        text: "Para fechar o relatório do milhão, o Chefão quer comprovar a relação estatística entre o INVESTIMENTO EM MARKETING (R$) e o RETORNO DE VENDAS (R$). Qual visualização quantitativa demonstra com precisão a correlação entre duas variáveis numéricas?",
+        showTable: false,
+        options: [
+          "Gráfico de Dispersão (Scatter Plot), para analisar a correlação quantitativa entre duas variáveis.",
+          "Gráfico de Pizza com 50 fatias coloridas.",
+          "Gráfico de Colunas Empilhadas 100% sem eixo de dados.",
+          "Tabela de texto sem ordenação numéica."
+        ],
+        correct: 0,
+        points: 250000,
+        explanation: "Sensacional! O Gráfico de Dispersão (Scatter Plot) mostra a relação e força de correlação entre duas variáveis quantitativas contínuas!"
+      }
+    ];
+
+    function startGame() {
+      currentPhase = 1;
+      currentQuestionIdx = 0;
+      lives = 3;
+      score = 0;
+      bonusAvailable = true;
+
+      document.getElementById('screenStart').classList.remove('active');
+      document.getElementById('screenQuiz').classList.add('active');
+      document.getElementById('headerBar').style.display = 'flex';
+      document.getElementById('progressContainer').style.display = 'block';
+
+      updateHeader();
+      renderQuestion();
+    }
+
+    function resetGame() {
+      document.getElementById('screenWin').classList.remove('active');
+      document.getElementById('screenGameOver').classList.remove('active');
+      document.getElementById('screenQuiz').classList.remove('active');
+      document.getElementById('screenStart').classList.add('active');
+      document.getElementById('headerBar').style.display = 'none';
+      document.getElementById('progressContainer').style.display = 'none';
+    }
+
+    function updateHeader() {
+      let hearts = "";
+      for (let i = 0; i < lives; i++) hearts += "❤️";
+      for (let i = lives; i < 3; i++) hearts += "🖤";
+      document.getElementById('livesContainer').innerHTML = hearts;
+
+      document.getElementById('scoreDisplay').innerText = score.toLocaleString('pt-BR') + " / 1.000.000 pts";
+      document.getElementById('phaseBadge').innerText = `Fase ${currentPhase} de 2`;
+
+      let progressPercent = ((currentQuestionIdx) / questions.length) * 100;
+      document.getElementById('progressBar').style.width = progressPercent + "%";
+
+      const btnBonus = document.getElementById('btnBonus');
+      if (!bonusAvailable) {
+        btnBonus.disabled = true;
+        btnBonus.innerText = "🎓 Ajuda das Universitárias (Já Utilizada)";
+      } else {
+        btnBonus.disabled = false;
+        btnBonus.innerText = "🎓 Ajuda das Universitárias (Eliminar 2 Opções)";
+      }
+    }
+
+    function renderQuestion() {
+      canAnswer = true;
+      const q = questions[currentQuestionIdx];
+      currentPhase = q.phase;
+      updateHeader();
+
+      document.getElementById('questionTitle').innerText = q.title;
+      document.getElementById('questionText').innerText = q.text;
+      
+      const dataBox = document.getElementById('dataContextBox');
+      if (q.showTable) {
+        let tableHTML = `
+          <div class="data-table-container">
+            <table>
+              <thead>
+                <tr><th>Mês / Item</th><th>Valor Registrado</th></tr>
+              </thead>
+              <tbody>`;
+        q.tableData.forEach(row => {
+          tableHTML += `<tr><td>${row.mes}</td><td>${row.venda}</td></tr>`;
+        });
+        tableHTML += `</tbody></table></div>`;
+        dataBox.innerHTML = tableHTML;
+      } else {
+        dataBox.innerHTML = "";
+      }
+
+      const grid = document.getElementById('optionsGrid');
+      grid.innerHTML = "";
+      const letters = ["A", "B", "C", "D"];
+
+      q.options.forEach((optText, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.id = `opt-${index}`;
+        btn.onclick = () => selectAnswer(index);
+        btn.innerHTML = `<span class="btn-letter">${letters[index]}</span> <span>${optText}</span>`;
+        grid.appendChild(btn);
+      });
+
+      document.getElementById('feedbackBox').style.display = 'none';
+      document.getElementById('btnNext').style.display = 'none';
+    }
+
+    function selectAnswer(selectedIndex) {
+      if (!canAnswer) return;
+      canAnswer = false;
+
+      const q = questions[currentQuestionIdx];
+      const feedbackBox = document.getElementById('feedbackBox');
+      const selectedBtn = document.getElementById(`opt-${selectedIndex}`);
+      const correctBtn = document.getElementById(`opt-${q.correct}`);
+
+      if (selectedIndex === q.correct) {
+        selectedBtn.classList.add('correct');
+        score += q.points;
+        feedbackBox.className = 'feedback-box correct-bg';
+        feedbackBox.innerHTML = `👏 <strong>Resposta Exata!</strong> ${q.explanation}`;
+      } else {
+        selectedBtn.classList.add('wrong');
+        correctBtn.classList.add('correct');
+        lives--;
+        feedbackBox.className = 'feedback-box wrong-bg';
+        feedbackBox.innerHTML = `❌ <strong>Incorreto!</strong> ${q.explanation}`;
+      }
+
+      updateHeader();
+      feedbackBox.style.display = 'block';
+
+      if (lives <= 0) {
+        setTimeout(showGameOver, 2000);
+      } else {
+        document.getElementById('btnNext').style.display = 'block';
+      }
+    }
+
+    function useUniversitarias() {
+      if (!bonusAvailable || !canAnswer) return;
+      bonusAvailable = false;
+      updateHeader();
+
+      const q = questions[currentQuestionIdx];
+      let wrongIndices = [];
+      q.options.forEach((_, idx) => {
+        if (idx !== q.correct) wrongIndices.push(idx);
+      });
+
+      wrongIndices.sort(() => Math.random() - 0.5);
+      const toDisable = wrongIndices.slice(0, 2);
+
+      toDisable.forEach(idx => {
+        const btn = document.getElementById(`opt-${idx}`);
+        if (btn) btn.disabled = true;
+      });
+    }
+
+    function nextQuestion() {
+      currentQuestionIdx++;
+      if (currentQuestionIdx < questions.length) {
+        renderQuestion();
+      } else {
+        showWin();
+      }
+    }
+
+    function showWin() {
+      document.getElementById('screenQuiz').classList.remove('active');
+      document.getElementById('screenWin').classList.add('active');
+      document.getElementById('progressBar').style.width = "100%";
+      document.getElementById('scoreDisplay').innerText = "1.000.000 pts";
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function showGameOver() {
+      document.getElementById('screenQuiz').classList.remove('active');
+      document.getElementById('screenGameOver').classList.active = false;
+      document.getElementById('screenGameOver').classList.add('active');
+    }
+  </script>
+</body>
+</html>
